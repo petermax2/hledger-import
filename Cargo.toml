@@ -1,0 +1,10 @@
+[package]
+name = "hledger-import"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bigdecimal = "0.4.4"
+chrono = "0.4.38"
+clap = { version = "4.5.7", features = ["derive"] }
+num-format = {version = "0.4.4", features = ["with-num-bigint"]}
