@@ -1,5 +1,8 @@
 use clap::{command, Parser};
+use deduplication::get_hledger_codes;
 
+pub mod deduplication;
+pub mod error;
 pub mod hledger;
 
 /// bank data and credit card import programm for hledger accounting
@@ -17,6 +20,15 @@ struct ImporterArgs {
 
 fn main() {
     let args = ImporterArgs::parse();
-    println!("Hello, importer! Digesting {}", &args.input_file);
+
     dbg!(&args);
+
+    let codes = get_hledger_codes();
+    if let Ok(codes) = codes {
+        codes.iter().for_each(|c| {
+            println!("{}", c);
+        });
+    } else {
+        eprintln!("Code retrieval failed");
+    }
 }
