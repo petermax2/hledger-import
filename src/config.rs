@@ -6,7 +6,8 @@ use std::str::FromStr;
 /// encapsulation of the application configuration
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct ImporterConfig {
-    pub hledger: Option<HledgerConfig>,
+    #[serde(default)]
+    pub hledger: HledgerConfig,
     pub ibans: Vec<IbanMapping>,
     pub cards: Vec<CardMapping>,
     pub mapping: Vec<SimpleMapping>,
@@ -151,9 +152,9 @@ mod tests {
         "
         .to_owned();
         let expected = ImporterConfig {
-            hledger: Some(HledgerConfig {
+            hledger: HledgerConfig {
                 path: "/opt/homebrew/bin/hledger".to_owned(),
-            }),
+            },
             ibans: vec![],
             cards: vec![],
             mapping: vec![],
@@ -185,7 +186,7 @@ mod tests {
         "
         .to_owned();
         let expected = ImporterConfig {
-            hledger: None,
+            hledger: HledgerConfig::default(),
             ibans: vec![],
             cards: vec![],
             mapping: vec![],
@@ -225,7 +226,7 @@ mod tests {
         "
         .to_owned();
         let expected = ImporterConfig {
-            hledger: None,
+            hledger: HledgerConfig::default(),
             mapping: vec![],
             creditor_and_debitor_mapping: vec![],
             transfer_accounts: TransferAccounts {
@@ -288,7 +289,7 @@ mod tests {
         "
         .to_owned();
         let expected = ImporterConfig {
-            hledger: None,
+            hledger: HledgerConfig::default(),
             mapping: vec![
                 SimpleMapping {
                     search: "Store".to_owned(),

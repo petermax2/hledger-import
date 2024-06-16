@@ -1,11 +1,11 @@
+use crate::config::HledgerConfig;
 use crate::error::ImportError;
 use crate::error::Result;
 use std::collections::HashSet;
 use std::process::Command;
 
-pub fn get_hledger_codes() -> Result<HashSet<String>> {
-    // TODO take hledger path from configuration
-    let output = Command::new("hledger").arg("codes").output();
+pub fn get_hledger_codes(config: &HledgerConfig) -> Result<HashSet<String>> {
+    let output = Command::new(&config.path).arg("codes").output();
     let output = match output {
         Ok(o) => o,
         Err(e) => return Err(ImportError::HledgerExection(e)),

@@ -34,7 +34,7 @@ fn main() {
     };
 
     let codes = if args.deduplicate {
-        match get_hledger_codes() {
+        match get_hledger_codes(&config.hledger) {
             Ok(codes) => codes,
             Err(e) => {
                 eprintln!("[ERROR] {}", e);
