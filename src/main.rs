@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use clap::{command, Parser};
 use deduplication::get_hledger_codes;
 
@@ -21,14 +23,18 @@ struct ImporterArgs {
 fn main() {
     let args = ImporterArgs::parse();
 
-    dbg!(&args);
-
-    let codes = get_hledger_codes();
-    if let Ok(codes) = codes {
-        codes.iter().for_each(|c| {
-            println!("{}", c);
-        });
+    let codes = if args.deduplicate {
+        match get_hledger_codes() {
+            Ok(codes) => codes,
+            Err(e) => {
+                eprintln!("[ERROR] {}", e);
+                return;
+            }
+        }
     } else {
-        eprintln!("Code retrieval failed");
-    }
+        HashSet::new()
+    };
+
+    dbg!(&args);
+    dbg!(&codes);
 }
