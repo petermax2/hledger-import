@@ -1,8 +1,10 @@
 use std::collections::HashSet;
 
 use clap::{command, Parser};
+use config::ImporterConfig;
 use deduplication::get_hledger_codes;
 
+pub mod config;
 pub mod deduplication;
 pub mod error;
 pub mod hledger;
@@ -23,6 +25,14 @@ struct ImporterArgs {
 fn main() {
     let args = ImporterArgs::parse();
 
+    let config = match ImporterConfig::load() {
+        Ok(config) => config,
+        Err(e) => {
+            eprintln!("[ERROR] {}", e);
+            return;
+        }
+    };
+
     let codes = if args.deduplicate {
         match get_hledger_codes() {
             Ok(codes) => codes,
@@ -36,5 +46,6 @@ fn main() {
     };
 
     dbg!(&args);
+    dbg!(&config);
     dbg!(&codes);
 }
