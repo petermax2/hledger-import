@@ -21,7 +21,11 @@ impl Display for AmountAndCommodity {
             .build()
             .unwrap();
 
-        let amount_str = self.amount.to_string();
+        let mut amount_str = self.amount.to_string();
+        if !amount_str.contains(".") {
+            amount_str.push_str(".00");
+        }
+
         let mut parts = amount_str.split('.');
 
         // the part before the comma (before the decimal point)
@@ -36,6 +40,9 @@ impl Display for AmountAndCommodity {
         if let Some(after_decimal) = parts.next() {
             amount.push(',');
             amount.push_str(after_decimal);
+            if after_decimal.len() < 2 {
+                amount.push_str("0");
+            }
         }
 
         write!(f, "{} {}", amount, &self.commodity)
@@ -249,7 +256,19 @@ mod tests {
             commodity: String::from("GLD"),
         };
         let result = amount.to_string();
-        assert_eq!(result, "22 GLD");
+        assert_eq!(result, "22,00 GLD");
+
+        let a = AmountAndCommodity {
+            amount: BigDecimal::from_str("10").unwrap(),
+            commodity: "EUR".to_owned(),
+        };
+        assert_eq!(a.to_string(), "10,00 EUR");
+
+        let a = AmountAndCommodity {
+            amount: BigDecimal::from_str("12.1").unwrap(),
+            commodity: "USD".to_owned(),
+        };
+        assert_eq!(a.to_string(), "12,10 USD");
     }
 
     #[test]
