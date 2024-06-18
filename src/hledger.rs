@@ -22,7 +22,7 @@ impl Display for AmountAndCommodity {
             .unwrap();
 
         let mut amount_str = self.amount.to_string();
-        if !amount_str.contains(".") {
+        if !amount_str.contains('.') {
             amount_str.push_str(".00");
         }
 
@@ -41,7 +41,7 @@ impl Display for AmountAndCommodity {
             amount.push(',');
             amount.push_str(after_decimal);
             if after_decimal.len() < 2 {
-                amount.push_str("0");
+                amount.push('0');
             }
         }
 
