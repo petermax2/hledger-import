@@ -117,6 +117,7 @@ pub struct TransferAccounts {
 pub struct SimpleMapping {
     pub search: String,
     pub account: String,
+    pub note: Option<String>,
 }
 
 /// Search for given regular expression and post to account, if the expression matches.
@@ -273,7 +274,7 @@ mod tests {
         cards = []
         mapping = [
           { search = \"Store\", account = \"Expenses:Test\" },
-          { search = \"Lab\", account = \"Expenses:Lab\" },
+          { search = \"Lab\", account = \"Expenses:Lab\", note = \"Note Test\" },
         ]
         creditor_and_debitor_mapping = [
           { search = \"Special Store\", account = \"Liabilities:AP:Sepcial\", default_pl_account = \"Expenses:Specials\" },
@@ -294,10 +295,12 @@ mod tests {
                 SimpleMapping {
                     search: "Store".to_owned(),
                     account: "Expenses:Test".to_owned(),
+                    note: None,
                 },
                 SimpleMapping {
                     search: "Lab".to_owned(),
                     account: "Expenses:Lab".to_owned(),
+                    note: Some("Note Test".to_owned()),
                 },
             ],
             creditor_and_debitor_mapping: vec![CreditorDebitorMapping {
