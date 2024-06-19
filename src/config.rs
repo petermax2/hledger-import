@@ -129,6 +129,7 @@ pub struct CreditorDebitorMapping {
     pub payee: String,
     pub account: String,
     pub default_pl_account: Option<String>,
+    pub days_difference: Option<u32>,
 }
 
 /// Define filters to remove or replace certain words from resulting hledger transactions
@@ -304,7 +305,7 @@ mod tests {
           { search = \"Lab\", account = \"Expenses:Lab\", note = \"Note Test\" },
         ]
         creditor_and_debitor_mapping = [
-          { payee = \"Special Store\", account = \"Liabilities:AP:Sepcial\", default_pl_account = \"Expenses:Specials\" },
+          { payee = \"Special Store\", account = \"Liabilities:AP:Sepcial\", default_pl_account = \"Expenses:Specials\", days_difference = 3 },
         ]
 
         [sepa]
@@ -334,6 +335,7 @@ mod tests {
                 payee: "Special Store".to_owned(),
                 account: "Liabilities:AP:Sepcial".to_owned(),
                 default_pl_account: Some("Expenses:Specials".to_owned()),
+                days_difference: Some(3),
             }],
             transfer_accounts: TransferAccounts {
                 bank: "Assets:Bank".to_owned(),
