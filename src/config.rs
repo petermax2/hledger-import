@@ -132,15 +132,9 @@ pub struct CreditorDebitorMapping {
 }
 
 /// Define filters to remove or replace certain words from resulting hledger transactions
-#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Deserialize, PartialEq, Eq, Default)]
 pub struct WordFilter {
     pub payee: Vec<FilterEntry>,
-}
-
-impl Default for WordFilter {
-    fn default() -> Self {
-        Self { payee: Vec::new() }
-    }
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]

@@ -448,7 +448,7 @@ mod tests {
         ";
 
         let transaction =
-            serde_json::from_str::<ErsteTransaction>(&json_str).expect("JSON parsing failed");
+            serde_json::from_str::<ErsteTransaction>(json_str).expect("JSON parsing failed");
 
         assert_eq!(&transaction.partner_name, &Some("Test Partner".to_owned()));
         assert_eq!(
@@ -566,7 +566,7 @@ mod tests {
         ";
 
         let transaction =
-            serde_json::from_str::<ErsteTransaction>(&json_str).expect("JSON parsing failed");
+            serde_json::from_str::<ErsteTransaction>(json_str).expect("JSON parsing failed");
 
         assert_eq!(&transaction.partner_name, &None);
         assert_eq!(
