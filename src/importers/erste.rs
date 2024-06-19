@@ -14,7 +14,7 @@ use crate::config::SepaMandateMapping;
 use crate::config::SimpleMapping;
 use crate::error::ImportError;
 use crate::error::Result;
-use crate::hledger::*;
+use crate::hledger::output::*;
 use crate::HledgerImporter;
 
 pub struct HledgerErsteJsonImporter {}

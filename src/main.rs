@@ -1,13 +1,12 @@
 use std::collections::HashSet;
 
+use crate::hledger::deduplication::get_hledger_codes;
+use crate::hledger::output::Transaction;
 use clap::{command, Parser, ValueEnum};
 use config::ImporterConfig;
-use deduplication::get_hledger_codes;
 use error::Result;
-use hledger::Transaction;
 
 pub mod config;
-pub mod deduplication;
 pub mod error;
 pub mod hledger;
 pub mod importers;
