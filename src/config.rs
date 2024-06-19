@@ -122,11 +122,11 @@ pub struct SimpleMapping {
     pub note: Option<String>,
 }
 
-/// Search for given regular expression and post to account, if the expression matches.
-/// Also create a P/L posting on "default_pl_account", if defined and no matching transaction exists on the P/L account.
+/// Represents a more complex mapping that enables the importer to post to different accounts,
+/// depending on the given transaction
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct CreditorDebitorMapping {
-    pub search: String,
+    pub payee: String,
     pub account: String,
     pub default_pl_account: Option<String>,
 }
@@ -310,7 +310,7 @@ mod tests {
           { search = \"Lab\", account = \"Expenses:Lab\", note = \"Note Test\" },
         ]
         creditor_and_debitor_mapping = [
-          { search = \"Special Store\", account = \"Liabilities:AP:Sepcial\", default_pl_account = \"Expenses:Specials\" },
+          { payee = \"Special Store\", account = \"Liabilities:AP:Sepcial\", default_pl_account = \"Expenses:Specials\" },
         ]
 
         [sepa]
@@ -337,7 +337,7 @@ mod tests {
                 },
             ],
             creditor_and_debitor_mapping: vec![CreditorDebitorMapping {
-                search: "Special Store".to_owned(),
+                payee: "Special Store".to_owned(),
                 account: "Liabilities:AP:Sepcial".to_owned(),
                 default_pl_account: Some("Expenses:Specials".to_owned()),
             }],
