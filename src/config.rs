@@ -14,6 +14,8 @@ pub struct ImporterConfig {
     pub creditor_and_debitor_mapping: Vec<CreditorDebitorMapping>,
     pub sepa: SepaConfig,
     pub transfer_accounts: TransferAccounts,
+    #[serde(default)]
+    pub filter: WordFilter,
 }
 
 impl ImporterConfig {
@@ -129,6 +131,24 @@ pub struct CreditorDebitorMapping {
     pub default_pl_account: Option<String>,
 }
 
+/// Define filters to remove or replace certain words from resulting hledger transactions
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+pub struct WordFilter {
+    pub payee: Vec<FilterEntry>,
+}
+
+impl Default for WordFilter {
+    fn default() -> Self {
+        Self { payee: Vec::new() }
+    }
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+pub struct FilterEntry {
+    pub pattern: String,
+    pub replacement: String,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -168,6 +188,7 @@ mod tests {
                 bank: "Assets:Bank".to_owned(),
                 cash: "Assets:Cash".to_owned(),
             },
+            filter: WordFilter::default(),
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
         assert_eq!(result, expected);
@@ -180,6 +201,11 @@ mod tests {
         [sepa]
         creditors = []
         mandates = []
+
+        [filter]
+        payee = [
+          { pattern = \"foo\", replacement=\"bar\" },
+        ]
 
         [transfer_accounts]
         bank = \"Assets:Bank\"
@@ -199,6 +225,12 @@ mod tests {
             transfer_accounts: TransferAccounts {
                 bank: "Assets:Bank".to_owned(),
                 cash: "Assets:Cash".to_owned(),
+            },
+            filter: WordFilter {
+                payee: vec![FilterEntry {
+                    pattern: "foo".to_owned(),
+                    replacement: "bar".to_owned(),
+                }],
             },
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
@@ -266,6 +298,7 @@ mod tests {
                     note: None,
                 },
             ],
+            filter: WordFilter::default(),
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
         assert_eq!(result, expected);
@@ -318,6 +351,7 @@ mod tests {
                 mandates: vec![],
             },
             ibans: vec![],
+            filter: WordFilter::default(),
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
         assert_eq!(result, expected);
