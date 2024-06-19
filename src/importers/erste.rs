@@ -92,10 +92,16 @@ impl ErsteTransaction {
             .or(matching_config.sepa_mandate.and_then(|m| m.note.clone()))
             .or(matching_config.simple_mapping.and_then(|s| s.note.clone()));
 
-        let payee = self
+        let mut payee = self
             .partner_name
             .or(self.reference)
             .unwrap_or("".to_owned());
+
+        config.filter.payee.iter().for_each(|filter| {
+            if payee.contains(&filter.pattern) {
+                payee = payee.replace(&filter.pattern, &filter.replacement);
+            }
+        });
 
         Ok(vec![Transaction {
             date: self.booking.date_naive(),
