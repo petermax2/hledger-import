@@ -38,8 +38,10 @@ pub struct HledgerJsonQuantity {
     pub decimal_places: u32,
 }
 
-impl From<HledgerJsonQuantity> for Result<BigDecimal> {
-    fn from(value: HledgerJsonQuantity) -> Self {
+impl TryFrom<HledgerJsonQuantity> for BigDecimal {
+    type Error = crate::error::ImportError;
+
+    fn try_from(value: HledgerJsonQuantity) -> std::result::Result<Self, Self::Error> {
         match BigDecimal::from_i64(value.decimal_mantissa) {
             Some(d) => Ok(d / (10_i64).pow(value.decimal_places)),
             None => Err(ImportError::NumerConversion(format!(
@@ -50,10 +52,11 @@ impl From<HledgerJsonQuantity> for Result<BigDecimal> {
     }
 }
 
-impl From<HledgerJsonAmount> for Result<AmountAndCommodity> {
-    fn from(value: HledgerJsonAmount) -> Self {
-        let amount: Result<BigDecimal> = value.aquantity.into();
-        let amount = amount?;
+impl TryFrom<HledgerJsonAmount> for AmountAndCommodity {
+    type Error = crate::error::ImportError;
+
+    fn try_from(value: HledgerJsonAmount) -> std::result::Result<Self, Self::Error> {
+        let amount = value.aquantity.try_into()?;
         Ok(AmountAndCommodity {
             amount,
             commodity: value.acommodity.clone(),

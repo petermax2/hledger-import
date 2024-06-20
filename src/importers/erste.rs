@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use bigdecimal::BigDecimal;
 use bigdecimal::FromPrimitive;
 use chrono::DateTime;
+use chrono::Days;
 use regex::RegexBuilder;
 use serde::Deserialize;
 
@@ -15,6 +16,7 @@ use crate::config::SimpleMapping;
 use crate::error::ImportError;
 use crate::error::Result;
 use crate::hledger::output::*;
+use crate::hledger::query::query_hledger_by_payee_and_account;
 use crate::HledgerImporter;
 
 pub struct HledgerErsteJsonImporter {}
@@ -184,10 +186,7 @@ impl ErsteTransaction {
         if let Some(own_account) = own_account {
             result.push(Posting {
                 account: own_account,
-                amount: Some(AmountAndCommodity {
-                    amount: self.get_amount()?,
-                    commodity: self.amount.currency.clone(),
-                }),
+                amount: Some(self.amount.clone().try_into()?),
                 comment: None,
                 tags: Vec::new(),
             });
@@ -206,18 +205,16 @@ impl ErsteTransaction {
 
         // posting on P/L account or transfer account
         let other_account = config_items
-            .sepa_creditor
-            .map(|creditor| creditor.account.clone())
-            .or_else(|| {
-                config_items
-                    .sepa_mandate
-                    .map(|mandate| mandate.account.clone())
-            })
-            .or_else(|| {
-                config_items
-                    .simple_mapping
-                    .map(|mapping| mapping.account.clone())
-            });
+            .sepa_mandate
+            .map(|mandate| mandate.account.clone())
+            .or(config_items
+                .sepa_creditor
+                .map(|creditor| creditor.account.clone()))
+            .or(config_items.creditor_debitor_mapping_account.clone())
+            .or(config_items
+                .simple_mapping
+                .map(|simple| simple.account.clone()));
+
         if let Some(other_account) = other_account {
             result.push(Posting {
                 account: other_account,
@@ -228,14 +225,6 @@ impl ErsteTransaction {
         }
 
         Ok(result)
-    }
-
-    fn get_amount(&self) -> Result<BigDecimal> {
-        let amount = BigDecimal::from_i64(self.amount.value);
-        match amount {
-            Some(amount) => Ok(amount / ((10_i64).pow(self.amount.precision))),
-            None => Err(ImportError::NumerConversion(self.amount.value.to_string())),
-        }
     }
 }
 
@@ -249,12 +238,27 @@ pub struct ErstePartnerAccount {
     pub country_code: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ErsteAmount {
     pub value: i64,
     pub precision: u32,
     pub currency: String,
+}
+
+impl TryFrom<ErsteAmount> for AmountAndCommodity {
+    type Error = crate::error::ImportError;
+
+    fn try_from(value: ErsteAmount) -> std::result::Result<Self, Self::Error> {
+        let amount = BigDecimal::from_i64(value.value);
+        match amount {
+            Some(amount) => Ok(Self {
+                amount: amount / ((10_i64).pow(value.precision)),
+                commodity: value.currency,
+            }),
+            None => Err(ImportError::NumerConversion(value.value.to_string())),
+        }
+    }
 }
 
 struct MatchingConfigItems<'a> {
@@ -263,6 +267,7 @@ struct MatchingConfigItems<'a> {
     pub iban: Option<&'a IbanMapping>,
     pub card: Option<&'a CardMapping>,
     pub simple_mapping: Option<&'a SimpleMapping>,
+    pub creditor_debitor_mapping_account: Option<String>,
 
     /// this flag is set to true, if the partner IBAN is found in the configuration
     pub posting_against_own_iban: bool,
@@ -343,6 +348,58 @@ impl<'a> MatchingConfigItems<'a> {
             };
         }
 
+        let mut creditor_debitor_mapping_account = None;
+        if let Some(partner_name) = &transaction.partner_name {
+            let mut search_amount: AmountAndCommodity = transaction.amount.clone().try_into()?;
+            search_amount.amount *= -1;
+
+            for rule in &config.creditor_and_debitor_mapping {
+                if !partner_name.contains(&rule.payee) {
+                    continue;
+                }
+
+                let begin = match rule.days_difference {
+                    Some(delta) => transaction
+                        .booking
+                        .date_naive()
+                        .checked_sub_days(Days::new(delta as u64)),
+                    None => None,
+                };
+                let end = match rule.days_difference {
+                    Some(delta) => transaction
+                        .booking
+                        .date_naive()
+                        .checked_add_days(Days::new(delta as u64 + 1)),
+                    None => None,
+                };
+
+                let hledger_transactions = query_hledger_by_payee_and_account(
+                    &config.hledger,
+                    &rule.payee,
+                    &rule.account,
+                    begin,
+                    end,
+                )?;
+                let matching_cred_or_deb_trx = hledger_transactions.iter().any(|t| {
+                    t.tpostings.iter().any(|p| {
+                        p.paccount == rule.account
+                            && p.pamount
+                                .clone()
+                                .into_iter()
+                                .filter_map(|a| a.try_into().ok())
+                                .any(|a: AmountAndCommodity| a == search_amount)
+                    })
+                });
+
+                if matching_cred_or_deb_trx {
+                    creditor_debitor_mapping_account = Some(rule.account.clone());
+                } else {
+                    creditor_debitor_mapping_account.clone_from(&rule.default_pl_account);
+                }
+                break;
+            }
+        }
+
         let posting_against_own_iban = match &transaction.partner_account.iban {
             Some(iban) => config
                 .ibans
@@ -357,6 +414,7 @@ impl<'a> MatchingConfigItems<'a> {
             sepa_creditor,
             sepa_mandate,
             simple_mapping,
+            creditor_debitor_mapping_account,
             posting_against_own_iban,
         })
     }
