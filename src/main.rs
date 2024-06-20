@@ -5,6 +5,7 @@ use crate::hledger::output::Transaction;
 use clap::{command, Parser, ValueEnum};
 use config::ImporterConfig;
 use error::Result;
+use hledger::output::HeaderComment;
 
 pub mod config;
 pub mod error;
@@ -18,6 +19,8 @@ pub trait HledgerImporter {
         config: &ImporterConfig,
         known_codes: &HashSet<String>,
     ) -> Result<Vec<Transaction>>;
+
+    fn output_title(&self) -> &'static str;
 }
 
 #[derive(Debug, Clone, ValueEnum)]
@@ -78,6 +81,7 @@ fn main() {
     let importer: Box<dyn HledgerImporter> = args.file_type.into();
     match importer.parse(&args.input_file, &config, &codes) {
         Ok(transactions) => {
+            println!("{}", HeaderComment::new(importer.output_title()));
             transactions.iter().for_each(|t| println!("{}\n", t));
         }
         Err(e) => {

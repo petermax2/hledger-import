@@ -56,6 +56,10 @@ impl HledgerImporter for HledgerErsteJsonImporter {
             Err(_) => Err(ImportError::InputFileRead(input_file.to_path_buf())),
         }
     }
+
+    fn output_title(&self) -> &'static str {
+        "Erste Import"
+    }
 }
 
 #[derive(Debug, Deserialize)]

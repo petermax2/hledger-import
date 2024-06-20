@@ -188,6 +188,30 @@ impl Display for Posting {
     }
 }
 
+#[derive(Debug)]
+pub struct HeaderComment<'a> {
+    pub title: &'a str,
+}
+
+impl<'a> HeaderComment<'a> {
+    pub fn new(title: &'a str) -> Self {
+        Self { title }
+    }
+}
+
+impl<'a> Display for HeaderComment<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let asterisk_line: String = "*".repeat(78);
+        let date_time = chrono::Local::now().to_rfc2822();
+        let gap: String = " ".repeat(80 - self.title.len() - date_time.len() - 2);
+        write!(
+            f,
+            "; {}\n; {}{}{}\n; {}",
+            asterisk_line, self.title, gap, date_time, asterisk_line
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{str::FromStr, vec};

@@ -9,7 +9,7 @@ all = ["erste-json"]
 
 [dependencies]
 bigdecimal = "0.4.4"
-chrono = {version = "0.4.38", features = ["serde"]}
+chrono = {version = "0.4.38", features = ["serde", "now"]}
 clap = { version = "4.5.7", features = ["derive"] }
 homedir = "0.2.1"
 num-format = {version = "0.4.4", features = ["with-num-bigint"]}
