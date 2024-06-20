@@ -11,16 +11,13 @@ pub enum ImportError {
     InputParse(String),
     NumerConversion(String),
     Regex(String),
+    Query(String),
 }
 
 impl Display for ImportError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            ImportError::HledgerExection(e) => write!(
-                f,
-                "Failed to read list of known transaction codes from hledger: {}",
-                e
-            ),
+            ImportError::HledgerExection(e) => write!(f, "Failed to interact with hledger: {}",e),
             ImportError::StringConversion(e) => write!(
                 f,
                 "Encoding/Conversion error while parsing hledger transaction code list output: {}",
@@ -33,6 +30,7 @@ impl Display for ImportError {
             ImportError::InputParse(msg) => write!(f, "Failed to parse input file: {}", msg),
             ImportError::NumerConversion(txt) => write!(f, "Can not interpret \"{}\" as number (amount)", txt),
             ImportError::Regex(e) => write!(f, "Configuration error in regular expression: {}", e),
+            ImportError::Query(e) => write!(f, "Failed to extract transaction information from hledger: {}", e),
         }
     }
 }
