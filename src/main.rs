@@ -87,5 +87,5 @@ fn main() {
         Err(e) => {
             eprintln!("[ERROR] {}", e);
         }
-    }
+    };
 }
