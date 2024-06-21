@@ -19,6 +19,8 @@ pub struct ImporterConfig {
     pub transfer_accounts: TransferAccounts,
     #[serde(default)]
     pub filter: WordFilter,
+    /// a fallback account can be set to balance postings that could not be assigned to any other account
+    pub fallback_account: Option<String>,
     pub revolut: Option<RevolutConfig>,
 }
 
@@ -158,6 +160,7 @@ mod tests {
         cards = []
         mapping = []
         creditor_and_debitor_mapping = []
+        fallback_account = \"Equity:Unassigned\"
 
         [sepa]
         creditors = []
@@ -188,6 +191,7 @@ mod tests {
                 cash: "Assets:Cash".to_owned(),
             },
             filter: WordFilter::default(),
+            fallback_account: Some("Equity:Unassigned".to_owned()),
             revolut: None,
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
@@ -232,6 +236,7 @@ mod tests {
                     replacement: "bar".to_owned(),
                 }],
             },
+            fallback_account: None,
             revolut: None,
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
@@ -300,6 +305,7 @@ mod tests {
                 },
             ],
             filter: WordFilter::default(),
+            fallback_account: None,
             revolut: None,
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
@@ -355,6 +361,7 @@ mod tests {
             },
             ibans: vec![],
             filter: WordFilter::default(),
+            fallback_account: None,
             revolut: None,
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");

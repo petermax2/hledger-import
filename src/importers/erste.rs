@@ -222,6 +222,16 @@ impl ErsteTransaction {
                 comment: None,
                 tags: Vec::new(),
             });
+        } else if let Some(fallback_account) = &config.fallback_account {
+            result.push(Posting {
+                account: fallback_account.clone(),
+                amount: None,
+                comment: None,
+                tags: vec![Tag {
+                    name: "todo".to_owned(),
+                    value: None,
+                }],
+            });
         }
 
         Ok(result)
