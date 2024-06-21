@@ -64,9 +64,9 @@ impl HledgerImporter for HledgerErsteJsonImporter {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ErsteTransaction {
+struct ErsteTransaction {
     pub booking: DateTime<chrono::Local>,
     pub valuation: DateTime<chrono::Local>,
     pub partner_name: Option<String>,
@@ -74,16 +74,16 @@ pub struct ErsteTransaction {
     pub reference_number: String,
     pub receiver_reference: Option<String>,
     pub partner_account: ErstePartnerAccount,
-    pub partner_reference: Option<String>,
+    // pub partner_reference: Option<String>,
     pub amount: ErsteAmount,
     pub note: Option<String>,
-    pub card_number: Option<String>,
-    pub virtual_card_number: Option<String>,
-    pub virtual_card_device_name: Option<String>,
+    // pub card_number: Option<String>,
+    // pub virtual_card_number: Option<String>,
+    // pub virtual_card_device_name: Option<String>,
     pub sepa_mandate_id: Option<String>,
     pub sepa_creditor_id: Option<String>,
     pub owner_account_number: Option<String>,
-    pub owner_account_title: Option<String>,
+    // pub owner_account_title: Option<String>,
 }
 
 impl ErsteTransaction {
@@ -228,19 +228,19 @@ impl ErsteTransaction {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ErstePartnerAccount {
+struct ErstePartnerAccount {
     pub iban: Option<String>,
-    pub bic: Option<String>,
-    pub number: Option<String>,
-    pub bank_code: Option<String>,
-    pub country_code: Option<String>,
+    // pub bic: Option<String>,
+    // pub number: Option<String>,
+    // pub bank_code: Option<String>,
+    // pub country_code: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ErsteAmount {
+struct ErsteAmount {
     pub value: i64,
     pub precision: u32,
     pub currency: String,
@@ -525,7 +525,7 @@ mod tests {
             &transaction.receiver_reference,
             &Some("999999999999".to_owned())
         );
-        assert_eq!(&transaction.partner_reference, &None);
+        // assert_eq!(&transaction.partner_reference, &None);
 
         assert_eq!(
             transaction.booking.date_naive(),
@@ -540,7 +540,7 @@ mod tests {
             &transaction.partner_account.iban,
             &Some("AT472011199999999999".to_owned())
         );
-        assert_eq!(&transaction.partner_account.bic, &Some("".to_owned()));
+        // assert_eq!(&transaction.partner_account.bic, &Some("".to_owned()));
 
         assert_eq!(transaction.amount.value, -1500);
         assert_eq!(transaction.amount.precision, 2);
@@ -637,7 +637,7 @@ mod tests {
         );
         assert_eq!(&transaction.owner_account_number, &None);
         assert_eq!(&transaction.receiver_reference, &Some("".to_owned()));
-        assert_eq!(&transaction.partner_reference, &None);
+        // assert_eq!(&transaction.partner_reference, &None);
 
         assert_eq!(
             transaction.booking.date_naive(),
@@ -649,19 +649,19 @@ mod tests {
         );
 
         assert_eq!(&transaction.partner_account.iban, &Some("".to_owned()));
-        assert_eq!(&transaction.partner_account.bic, &Some("".to_owned()));
-        assert_eq!(
-            &transaction.partner_account.number,
-            &Some("99999999999".to_owned())
-        );
-        assert_eq!(
-            &transaction.partner_account.bank_code,
-            &Some("20111".to_owned())
-        );
-        assert_eq!(
-            &transaction.partner_account.country_code,
-            &Some("AT".to_owned())
-        );
+        // assert_eq!(&transaction.partner_account.bic, &Some("".to_owned()));
+        // assert_eq!(
+        //     &transaction.partner_account.number,
+        //     &Some("99999999999".to_owned())
+        // );
+        // assert_eq!(
+        //     &transaction.partner_account.bank_code,
+        //     &Some("20111".to_owned())
+        // );
+        // assert_eq!(
+        //     &transaction.partner_account.country_code,
+        //     &Some("AT".to_owned())
+        // );
 
         assert_eq!(transaction.amount.value, -10000);
         assert_eq!(transaction.amount.precision, 2);
