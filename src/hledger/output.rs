@@ -57,7 +57,7 @@ impl AmountAndCommodity {
 
 /// hledger uses tags to identify transactions or postings.
 /// Tags can hold values optionally.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq)]
 pub struct Tag {
     pub name: String,
     pub value: Option<String>,
@@ -123,7 +123,7 @@ impl Display for TransactionState {
 }
 
 /// In hledger a transaction is an accounting document that consists of a date and a set of postings on accounts.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Transaction {
     pub date: NaiveDate,
     pub code: Option<String>,
@@ -159,7 +159,7 @@ impl Display for Transaction {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Posting {
     pub account: String,
     pub amount: Option<AmountAndCommodity>,

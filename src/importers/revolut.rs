@@ -242,3 +242,197 @@ impl RevolutTransaction {
         Ok(big_dec)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use bigdecimal::FromPrimitive;
+
+    use crate::config::{
+        HledgerConfig, ImporterConfig, SepaConfig, SimpleMapping, TransferAccounts,
+    };
+
+    use super::*;
+
+    #[test]
+    fn deserialize_csv_examples() {
+        let config = test_config();
+
+        let csv = "Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance
+CARD_PAYMENT,Current,2024-05-01 13:05:33,2024-05-01 16:46:56,Patreon,-24.40,0.00,EUR,COMPLETED,100.00
+CARD_PAYMENT,Current,2024-05-03 15:04:58,2024-05-04 03:36:34,Apple,-1.99,0.00,EUR,COMPLETED,97.01
+TOPUP,Current,2024-05-19 10:02:45,2024-05-22 10:02:45,Payment from John Doe Jr,150.00,0.00,EUR,COMPLETED,247.01
+";
+
+        let mut transactions: Vec<Transaction> = Vec::new();
+        let mut reader = csv::ReaderBuilder::new()
+            .delimiter(b',')
+            .has_headers(true)
+            .double_quote(false)
+            .flexible(true)
+            .from_reader(csv.as_bytes());
+
+        for record in reader.deserialize::<RevolutTransaction>() {
+            let record = record.expect("Parsing CSV record failed");
+            transactions.push(
+                record
+                    .into_hledger(&config)
+                    .expect("Converting CSV record into hledger output failed"),
+            );
+        }
+        dbg!(&transactions);
+
+        assert_eq!(3, transactions.len());
+
+        let t1 = Transaction {
+            date: NaiveDate::from_ymd_opt(2024, 5, 1).unwrap(),
+            code: None,
+            payee: "Patreon".to_owned(),
+            note: None,
+            state: TransactionState::Cleared,
+            comment: None,
+            tags: vec![
+                Tag {
+                    name: "valuation".to_owned(),
+                    value: Some("2024-05-01 13:05:33".to_owned()),
+                },
+                Tag {
+                    name: "revolut_type".to_owned(),
+                    value: Some("CARD_PAYMENT".to_owned()),
+                },
+            ],
+            postings: vec![
+                Posting {
+                    account: "Assets:Revolut".to_owned(),
+                    amount: Some(AmountAndCommodity {
+                        amount: BigDecimal::from_i64(-2440).unwrap() / 100,
+                        commodity: "EUR".to_owned(),
+                    }),
+                    comment: None,
+                    tags: Vec::new(),
+                },
+                Posting {
+                    account: "Expenses:Donation".to_owned(),
+                    amount: None,
+                    comment: None,
+                    tags: Vec::new(),
+                },
+            ],
+        };
+
+        dbg!(&t1);
+        assert!(transactions.contains(&t1));
+
+        let t2 = Transaction {
+            date: NaiveDate::from_ymd_opt(2024, 5, 4).unwrap(),
+            code: None,
+            payee: "Apple".to_owned(),
+            note: None,
+            state: TransactionState::Cleared,
+            comment: None,
+            tags: vec![
+                Tag {
+                    name: "valuation".to_owned(),
+                    value: Some("2024-05-03 15:04:58".to_owned()),
+                },
+                Tag {
+                    name: "revolut_type".to_owned(),
+                    value: Some("CARD_PAYMENT".to_owned()),
+                },
+            ],
+            postings: vec![
+                Posting {
+                    account: "Assets:Revolut".to_owned(),
+                    amount: Some(AmountAndCommodity {
+                        amount: BigDecimal::from_i64(-199).unwrap() / 100,
+                        commodity: "EUR".to_owned(),
+                    }),
+                    comment: None,
+                    tags: Vec::new(),
+                },
+                Posting {
+                    account: "Expenses:Apples".to_owned(),
+                    amount: None,
+                    comment: None,
+                    tags: Vec::new(),
+                },
+            ],
+        };
+
+        dbg!(&t2);
+        assert!(transactions.contains(&t2));
+
+        let t3 = Transaction {
+            date: NaiveDate::from_ymd_opt(2024, 5, 22).unwrap(),
+            code: None,
+            payee: "Payment from John Doe Jr".to_owned(),
+            note: None,
+            state: TransactionState::Cleared,
+            comment: None,
+            tags: vec![
+                Tag {
+                    name: "valuation".to_owned(),
+                    value: Some("2024-05-19 10:02:45".to_owned()),
+                },
+                Tag {
+                    name: "revolut_type".to_owned(),
+                    value: Some("TOPUP".to_owned()),
+                },
+            ],
+            postings: vec![
+                Posting {
+                    account: "Assets:Revolut".to_owned(),
+                    amount: Some(AmountAndCommodity {
+                        amount: BigDecimal::from_i64(150).unwrap(),
+                        commodity: "EUR".to_owned(),
+                    }),
+                    comment: None,
+                    tags: Vec::new(),
+                },
+                Posting {
+                    account: "Assets:Reconciliation:Bank".to_owned(),
+                    amount: None,
+                    comment: None,
+                    tags: Vec::new(),
+                },
+            ],
+        };
+
+        dbg!(&t3);
+        assert!(transactions.contains(&t3));
+    }
+
+    fn test_config() -> ImporterConfig {
+        ImporterConfig {
+            hledger: HledgerConfig::default(),
+            ibans: Vec::new(),
+            cards: Vec::new(),
+            mapping: vec![
+                SimpleMapping {
+                    search: "PATREON".to_owned(),
+                    account: "Expenses:Donation".to_owned(),
+                    note: None,
+                },
+                SimpleMapping {
+                    search: "APPLE".to_owned(),
+                    account: "Expenses:Apples".to_owned(),
+                    note: None,
+                },
+            ],
+            creditor_and_debitor_mapping: Vec::new(),
+            sepa: SepaConfig {
+                creditors: Vec::new(),
+                mandates: Vec::new(),
+            },
+            transfer_accounts: TransferAccounts {
+                bank: "Assets:Reconciliation:Bank".to_owned(),
+                cash: "Assets:Reconciliation:Cash".to_owned(),
+            },
+            filter: crate::config::WordFilter::default(),
+            fallback_account: Some("Equity:Fallback".to_owned()),
+            revolut: Some(RevolutConfig {
+                account: "Assets:Revolut".to_owned(),
+                fee_account: Some("Expenses:Fee".to_owned()),
+            }),
+        }
+    }
+}
