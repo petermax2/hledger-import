@@ -19,6 +19,8 @@ The configuration file is written in TOML format.
 `ibans` enumerates all of your bank accounts.
 If `iban` matches, then `account` is used for the resulting hledger transaction.
 
+A `fallback_account` can be set to balance postings for which no other rules apply or fit.
+
 ### cards
 
 TODO
