@@ -56,7 +56,7 @@ impl HledgerImporter for RevolutCsvImporter {
     }
 
     fn output_title(&self) -> &'static str {
-        "cardcomplete Import"
+        "Revolut Import"
     }
 }
 
