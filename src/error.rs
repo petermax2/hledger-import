@@ -12,6 +12,7 @@ pub enum ImportError {
     NumerConversion(String),
     Regex(String),
     Query(String),
+    MissingConfig(String),
 }
 
 impl Display for ImportError {
@@ -31,6 +32,7 @@ impl Display for ImportError {
             ImportError::NumerConversion(txt) => write!(f, "Can not interpret \"{}\" as number (amount)", txt),
             ImportError::Regex(e) => write!(f, "Configuration error in regular expression: {}", e),
             ImportError::Query(e) => write!(f, "Failed to extract transaction information from hledger: {}", e),
+            ImportError::MissingConfig(section) => write!(f, "Missing section \"{}\" in configuration", section),
         }
     }
 }

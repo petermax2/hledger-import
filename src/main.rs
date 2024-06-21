@@ -28,12 +28,15 @@ enum Importer {
     //#[cfg(feature = "erste-json")]
     /// Erste Bank JSON export file
     Erste,
+    /// Revolut CSV export file
+    Revolut,
 }
 
 impl From<Importer> for Box<dyn HledgerImporter> {
     fn from(val: Importer) -> Self {
         match val {
             Importer::Erste => Box::new(importers::erste::HledgerErsteJsonImporter::new()),
+            Importer::Revolut => Box::new(importers::revolut::RevolutCsvImporter::new()),
         }
     }
 }

@@ -1,4 +1,7 @@
-use crate::error::{ImportError, Result};
+use crate::{
+    error::{ImportError, Result},
+    importers::revolut::RevolutConfig,
+};
 use homedir::get_my_home;
 use serde::Deserialize;
 use std::str::FromStr;
@@ -16,6 +19,7 @@ pub struct ImporterConfig {
     pub transfer_accounts: TransferAccounts,
     #[serde(default)]
     pub filter: WordFilter,
+    pub revolut: Option<RevolutConfig>,
 }
 
 impl ImporterConfig {
@@ -184,6 +188,7 @@ mod tests {
                 cash: "Assets:Cash".to_owned(),
             },
             filter: WordFilter::default(),
+            revolut: None,
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
         assert_eq!(result, expected);
@@ -227,6 +232,7 @@ mod tests {
                     replacement: "bar".to_owned(),
                 }],
             },
+            revolut: None,
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
         assert_eq!(result, expected);
@@ -294,6 +300,7 @@ mod tests {
                 },
             ],
             filter: WordFilter::default(),
+            revolut: None,
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
         assert_eq!(result, expected);
@@ -348,6 +355,7 @@ mod tests {
             },
             ibans: vec![],
             filter: WordFilter::default(),
+            revolut: None,
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
         assert_eq!(result, expected);
