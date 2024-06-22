@@ -73,7 +73,7 @@ struct ErsteTransaction {
     pub reference: Option<String>,
     pub reference_number: String,
     pub receiver_reference: Option<String>,
-    pub partner_account: ErstePartnerAccount,
+    pub partner_account: Option<ErstePartnerAccount>,
     // pub partner_reference: Option<String>,
     pub amount: ErsteAmount,
     pub note: Option<String>,
@@ -135,12 +135,14 @@ impl ErsteTransaction {
                 });
             }
         }
-        if let Some(partner_iban) = &self.partner_account.iban {
-            if !partner_iban.is_empty() {
-                tags.push(Tag {
-                    name: "partner_iban".to_owned(),
-                    value: Some(partner_iban.clone()),
-                });
+        if let Some(partner_account) = &self.partner_account {
+            if let Some(partner_iban) = &partner_account.iban {
+                if !partner_iban.is_empty() {
+                    tags.push(Tag {
+                        name: "partner_iban".to_owned(),
+                        value: Some(partner_iban.clone()),
+                    });
+                }
             }
         }
         if let Some(receiver_ref) = &self.receiver_reference {
@@ -410,11 +412,14 @@ impl<'a> MatchingConfigItems<'a> {
             }
         }
 
-        let posting_against_own_iban = match &transaction.partner_account.iban {
-            Some(iban) => config
-                .ibans
-                .iter()
-                .any(|iban_mapping| iban_mapping.iban == *iban),
+        let posting_against_own_iban = match &transaction.partner_account {
+            Some(partner_account) => match &partner_account.iban {
+                Some(iban) => config
+                    .ibans
+                    .iter()
+                    .any(|iban_mapping| iban_mapping.iban == *iban),
+                None => false,
+            },
             None => false,
         };
 
@@ -547,7 +552,10 @@ mod tests {
         );
 
         assert_eq!(
-            &transaction.partner_account.iban,
+            &transaction
+                .partner_account
+                .expect("partner account must not be empty if provided")
+                .iban,
             &Some("AT472011199999999999".to_owned())
         );
         // assert_eq!(&transaction.partner_account.bic, &Some("".to_owned()));
@@ -658,7 +666,10 @@ mod tests {
             NaiveDate::from_ymd_opt(2024, 6, 1).unwrap()
         );
 
-        assert_eq!(&transaction.partner_account.iban, &Some("".to_owned()));
+        assert_eq!(
+            &transaction.partner_account.unwrap().iban,
+            &Some("".to_owned())
+        );
         // assert_eq!(&transaction.partner_account.bic, &Some("".to_owned()));
         // assert_eq!(
         //     &transaction.partner_account.number,
