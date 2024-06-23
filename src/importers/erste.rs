@@ -60,7 +60,7 @@ impl HledgerImporter for HledgerErsteJsonImporter {
     }
 
     fn output_title(&self) -> &'static str {
-        "Erste Import"
+        "Erste import"
     }
 }
 
