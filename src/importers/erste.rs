@@ -127,10 +127,10 @@ impl ErsteTransaction {
         let mut tags = Vec::new();
         let valuation = &self.valuation;
         if valuation.len() >= 10 {
-        tags.push(Tag {
-            name: "valuation".to_owned(),
-            value: Some(valuation[..10].to_owned()),
-        });
+            tags.push(Tag {
+                name: "valuation".to_owned(),
+                value: Some(valuation[..10].to_owned()),
+            });
         }
         if let Some(reference) = &self.reference {
             if !reference.is_empty() {
@@ -251,7 +251,10 @@ impl ErsteTransaction {
                 Err(e) => Err(ImportError::InputParse(e.to_string())),
             }
         } else {
-            Err(ImportError::InputParse(format!("invalid booking date \"{}\"", &self.booking)))
+            Err(ImportError::InputParse(format!(
+                "invalid booking date \"{}\"",
+                &self.booking
+            )))
         }
     }
 }
@@ -557,13 +560,12 @@ mod tests {
         // assert_eq!(&transaction.partner_reference, &None);
 
         assert_eq!(
-            transaction.booking_date().expect("Booking date should be valid but was not parsed correctly"),
+            transaction
+                .booking_date()
+                .expect("Booking date should be valid but was not parsed correctly"),
             NaiveDate::from_ymd_opt(2024, 6, 3).unwrap()
         );
-        assert_eq!(
-            &transaction.valuation[..10],
-            "2024-06-01"
-        );
+        assert_eq!(&transaction.valuation[..10], "2024-06-01");
 
         assert_eq!(
             &transaction
@@ -675,10 +677,7 @@ mod tests {
             transaction.booking_date().unwrap(),
             NaiveDate::from_ymd_opt(2024, 6, 3).unwrap()
         );
-        assert_eq!(
-            &transaction.valuation[..10],
-            "2024-06-01"
-        );
+        assert_eq!(&transaction.valuation[..10], "2024-06-01");
 
         assert_eq!(
             &transaction.partner_account.unwrap().iban,
