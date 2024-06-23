@@ -2,8 +2,8 @@ use std::collections::HashSet;
 
 use bigdecimal::BigDecimal;
 use bigdecimal::FromPrimitive;
-use chrono::DateTime;
 use chrono::Days;
+use chrono::NaiveDate;
 use regex::RegexBuilder;
 use serde::Deserialize;
 
@@ -67,8 +67,8 @@ impl HledgerImporter for HledgerErsteJsonImporter {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ErsteTransaction {
-    pub booking: DateTime<chrono::Local>,
-    pub valuation: DateTime<chrono::Local>,
+    pub booking: String,
+    pub valuation: String,
     pub partner_name: Option<String>,
     pub reference: Option<String>,
     pub reference_number: String,
@@ -90,6 +90,8 @@ impl ErsteTransaction {
     fn into_hledger(self, config: &ImporterConfig) -> Result<Vec<Transaction>> {
         let matching_config = MatchingConfigItems::match_config(&self, config)?;
 
+        let date = self.booking_date()?;
+
         let tags = self.derive_tags();
         let postings = self.derive_postings(&matching_config, config)?;
         let note = self
@@ -110,7 +112,7 @@ impl ErsteTransaction {
         });
 
         Ok(vec![Transaction {
-            date: self.booking.date_naive(),
+            date,
             code: Some(self.reference_number),
             state: TransactionState::Cleared,
             comment: None,
@@ -123,10 +125,13 @@ impl ErsteTransaction {
 
     fn derive_tags(&self) -> Vec<Tag> {
         let mut tags = Vec::new();
+        let valuation = &self.valuation;
+        if valuation.len() >= 10 {
         tags.push(Tag {
             name: "valuation".to_owned(),
-            value: Some(self.valuation.date_naive().format("%Y-%m-%d").to_string()),
+            value: Some(valuation[..10].to_owned()),
         });
+        }
         if let Some(reference) = &self.reference {
             if !reference.is_empty() {
                 tags.push(Tag {
@@ -237,6 +242,17 @@ impl ErsteTransaction {
         }
 
         Ok(result)
+    }
+
+    fn booking_date(&self) -> Result<NaiveDate> {
+        if self.booking.len() >= 10 {
+            match NaiveDate::parse_from_str(&self.booking[..10], "%Y-%m-%d") {
+                Ok(date) => Ok(date),
+                Err(e) => Err(ImportError::InputParse(e.to_string())),
+            }
+        } else {
+            Err(ImportError::InputParse(format!("invalid booking date \"{}\"", &self.booking)))
+        }
     }
 }
 
@@ -372,15 +388,13 @@ impl<'a> MatchingConfigItems<'a> {
 
                 let begin = match rule.days_difference {
                     Some(delta) => transaction
-                        .booking
-                        .date_naive()
+                        .booking_date()?
                         .checked_sub_days(Days::new(delta as u64)),
                     None => None,
                 };
                 let end = match rule.days_difference {
                     Some(delta) => transaction
-                        .booking
-                        .date_naive()
+                        .booking_date()?
                         .checked_add_days(Days::new(delta as u64 + 1)),
                     None => None,
                 };
@@ -543,12 +557,12 @@ mod tests {
         // assert_eq!(&transaction.partner_reference, &None);
 
         assert_eq!(
-            transaction.booking.date_naive(),
+            transaction.booking_date().expect("Booking date should be valid but was not parsed correctly"),
             NaiveDate::from_ymd_opt(2024, 6, 3).unwrap()
         );
         assert_eq!(
-            transaction.valuation.date_naive(),
-            NaiveDate::from_ymd_opt(2024, 6, 1).unwrap()
+            &transaction.valuation[..10],
+            "2024-06-01"
         );
 
         assert_eq!(
@@ -658,12 +672,12 @@ mod tests {
         // assert_eq!(&transaction.partner_reference, &None);
 
         assert_eq!(
-            transaction.booking.date_naive(),
+            transaction.booking_date().unwrap(),
             NaiveDate::from_ymd_opt(2024, 6, 3).unwrap()
         );
         assert_eq!(
-            transaction.valuation.date_naive(),
-            NaiveDate::from_ymd_opt(2024, 6, 1).unwrap()
+            &transaction.valuation[..10],
+            "2024-06-01"
         );
 
         assert_eq!(
