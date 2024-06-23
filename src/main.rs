@@ -86,6 +86,7 @@ fn main() {
         Ok(transactions) => {
             println!("{}", HeaderComment::new(importer.output_title()));
             transactions.iter().for_each(|t| println!("{}\n", t));
+            println!("");
         }
         Err(e) => {
             eprintln!("[ERROR] {}", e);
