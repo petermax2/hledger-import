@@ -121,7 +121,8 @@ impl CCTransaction {
 
         let other_target = config
             .match_mapping(&self.merchant_name)?
-            .or(config.match_category(&self.category));
+            .or(config.match_category(&self.category))
+            .or(config.fallback());
         if let Some(other_target) = other_target {
             note.clone_from(&other_target.note);
             postings.push(Posting {
