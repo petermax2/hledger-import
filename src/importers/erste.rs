@@ -4,15 +4,10 @@ use bigdecimal::BigDecimal;
 use bigdecimal::FromPrimitive;
 use chrono::Days;
 use chrono::NaiveDate;
-use regex::RegexBuilder;
 use serde::Deserialize;
 
-use crate::config::CardMapping;
-use crate::config::IbanMapping;
 use crate::config::ImporterConfig;
-use crate::config::SepaCreditorMapping;
-use crate::config::SepaMandateMapping;
-use crate::config::SimpleMapping;
+use crate::config::ImporterConfigTarget;
 use crate::error::ImportError;
 use crate::error::Result;
 use crate::hledger::output::*;
@@ -47,10 +42,7 @@ impl HledgerImporter for HledgerErsteJsonImporter {
                         .into_iter()
                         .filter(|t| !known_codes.contains(&t.reference_number))
                         .map(|t| t.into_hledger(config))
-                        .collect::<Result<Vec<_>>>()?
-                        .into_iter()
-                        .flatten()
-                        .collect();
+                        .collect::<Result<Vec<_>>>()?;
                     Ok(result)
                 }
                 Err(e) => Err(ImportError::InputParse(e.to_string())),
@@ -87,18 +79,57 @@ struct ErsteTransaction {
 }
 
 impl ErsteTransaction {
-    fn into_hledger(self, config: &ImporterConfig) -> Result<Vec<Transaction>> {
-        let matching_config = MatchingConfigItems::match_config(&self, config)?;
-
+    fn into_hledger(self, config: &ImporterConfig) -> Result<Transaction> {
+        let mut postings = Vec::new();
+        let mut note = None;
         let date = self.booking_date()?;
+        let tags = self.tags();
 
-        let tags = self.derive_tags();
-        let postings = self.derive_postings(&matching_config, config)?;
-        let note = self
-            .note
-            .or(matching_config.sepa_creditor.and_then(|c| c.note.clone()))
-            .or(matching_config.sepa_mandate.and_then(|m| m.note.clone()))
-            .or(matching_config.simple_mapping.and_then(|s| s.note.clone()));
+        let own_target = config
+            .identify_iban_opt(&self.owner_account_number)
+            .or(config.identify_card("Erste"));
+
+        if let Some(own_target) = own_target {
+            note = own_target.note;
+            postings.push(Posting {
+                account: own_target.account,
+                amount: Some(self.amount.clone().try_into()?),
+                comment: None,
+                tags: Vec::new(),
+            });
+        }
+
+        let is_bank_transfer = match &self.partner_account {
+            Some(partner_account) => config.identify_iban_opt(&partner_account.iban).is_some(),
+            None => false,
+        };
+
+        if is_bank_transfer {
+            postings.push(Posting {
+                account: config.transfer_accounts.bank.clone(),
+                amount: None,
+                comment: None,
+                tags: Vec::new(),
+            });
+        } else {
+            let other_target = config
+                .match_sepa_mandate_opt(&self.sepa_mandate_id)
+                .or(config.match_sepa_creditor_opt(&self.sepa_creditor_id))
+                .or(self.match_creditor_debitor_mapping(config)?)
+                .or(config.match_mapping_opt(&self.partner_name)?)
+                .or(config.match_mapping_opt(&self.reference)?)
+                .or(config.fallback());
+
+            if let Some(other_target) = other_target {
+                note.clone_from(&other_target.note);
+                postings.push(Posting {
+                    account: other_target.account.clone(),
+                    amount: None,
+                    comment: None,
+                    tags: Vec::new(),
+                });
+            }
+        }
 
         let mut payee = self
             .partner_name
@@ -111,7 +142,11 @@ impl ErsteTransaction {
             }
         });
 
-        Ok(vec![Transaction {
+        if let Some(trx_note) = &self.note {
+            note = Some(trx_note.clone());
+        }
+
+        Ok(Transaction {
             date,
             code: Some(self.reference_number),
             state: TransactionState::Cleared,
@@ -120,10 +155,10 @@ impl ErsteTransaction {
             note,
             tags,
             postings,
-        }])
+        })
     }
 
-    fn derive_tags(&self) -> Vec<Tag> {
+    fn tags(&self) -> Vec<Tag> {
         let mut tags = Vec::new();
         let valuation = &self.valuation;
         if valuation.len() >= 10 {
@@ -177,73 +212,6 @@ impl ErsteTransaction {
         tags
     }
 
-    fn derive_postings(
-        &self,
-        config_items: &MatchingConfigItems,
-        config: &ImporterConfig,
-    ) -> Result<Vec<Posting>> {
-        let mut result = Vec::new();
-
-        // posting on main bank account
-        let own_account = config_items
-            .iban
-            .map(|iban| iban.account.clone())
-            .or_else(|| config_items.card.map(|card| card.account.clone()));
-
-        if let Some(own_account) = own_account {
-            result.push(Posting {
-                account: own_account,
-                amount: Some(self.amount.clone().try_into()?),
-                comment: None,
-                tags: Vec::new(),
-            });
-        }
-
-        // postings agains another bank account owned by the person results in a bank transfer posting
-        if config_items.posting_against_own_iban {
-            result.push(Posting {
-                account: config.transfer_accounts.bank.clone(),
-                amount: None,
-                comment: None,
-                tags: Vec::new(),
-            });
-            return Ok(result);
-        }
-
-        // posting on P/L account or transfer account
-        let other_account = config_items
-            .sepa_mandate
-            .map(|mandate| mandate.account.clone())
-            .or(config_items
-                .sepa_creditor
-                .map(|creditor| creditor.account.clone()))
-            .or(config_items.creditor_debitor_mapping_account.clone())
-            .or(config_items
-                .simple_mapping
-                .map(|simple| simple.account.clone()));
-
-        if let Some(other_account) = other_account {
-            result.push(Posting {
-                account: other_account,
-                amount: None,
-                comment: None,
-                tags: Vec::new(),
-            });
-        } else if let Some(fallback_account) = &config.fallback_account {
-            result.push(Posting {
-                account: fallback_account.clone(),
-                amount: None,
-                comment: None,
-                tags: vec![Tag {
-                    name: "todo".to_owned(),
-                    value: None,
-                }],
-            });
-        }
-
-        Ok(result)
-    }
-
     fn booking_date(&self) -> Result<NaiveDate> {
         if self.booking.len() >= 10 {
             match NaiveDate::parse_from_str(&self.booking[..10], "%Y-%m-%d") {
@@ -255,6 +223,69 @@ impl ErsteTransaction {
                 "invalid booking date \"{}\"",
                 &self.booking
             )))
+        }
+    }
+
+    fn match_creditor_debitor_mapping(
+        &self,
+        config: &ImporterConfig,
+    ) -> Result<Option<ImporterConfigTarget>> {
+        match &self.partner_name {
+            Some(partner_name) => {
+                let mut search_amount: AmountAndCommodity = self.amount.clone().try_into()?;
+                search_amount.amount *= -1;
+
+                for rule in &config.creditor_and_debitor_mapping {
+                    if !partner_name.contains(&rule.payee) {
+                        continue;
+                    }
+
+                    let begin = match rule.days_difference {
+                        Some(delta) => self
+                            .booking_date()?
+                            .checked_sub_days(Days::new(delta as u64)),
+                        None => None,
+                    };
+                    let end = match rule.days_difference {
+                        Some(delta) => self
+                            .booking_date()?
+                            .checked_add_days(Days::new(delta as u64 + 1)),
+                        None => None,
+                    };
+
+                    let hledger_transactions = query_hledger_by_payee_and_account(
+                        &config.hledger,
+                        &rule.payee,
+                        &rule.account,
+                        begin,
+                        end,
+                    )?;
+                    let matching_cred_or_deb_trx = hledger_transactions.iter().any(|t| {
+                        t.tpostings.iter().any(|p| {
+                            p.paccount == rule.account
+                                && p.pamount
+                                    .clone()
+                                    .into_iter()
+                                    .filter_map(|a| a.try_into().ok())
+                                    .any(|a: AmountAndCommodity| a == search_amount)
+                        })
+                    });
+
+                    if matching_cred_or_deb_trx {
+                        return Ok(Some(ImporterConfigTarget {
+                            account: rule.account.clone(),
+                            note: None,
+                        }));
+                    } else if let Some(default_pl_account) = &rule.default_pl_account {
+                        return Ok(Some(ImporterConfigTarget {
+                            account: default_pl_account.clone(),
+                            note: None,
+                        }));
+                    }
+                }
+                Ok(None)
+            }
+            None => Ok(None),
         }
     }
 }
@@ -289,166 +320,6 @@ impl TryFrom<ErsteAmount> for AmountAndCommodity {
             }),
             None => Err(ImportError::NumerConversion(value.value.to_string())),
         }
-    }
-}
-
-struct MatchingConfigItems<'a> {
-    pub sepa_creditor: Option<&'a SepaCreditorMapping>,
-    pub sepa_mandate: Option<&'a SepaMandateMapping>,
-    pub iban: Option<&'a IbanMapping>,
-    pub card: Option<&'a CardMapping>,
-    pub simple_mapping: Option<&'a SimpleMapping>,
-    pub creditor_debitor_mapping_account: Option<String>,
-
-    /// this flag is set to true, if the partner IBAN is found in the configuration
-    pub posting_against_own_iban: bool,
-}
-
-impl<'a> MatchingConfigItems<'a> {
-    pub fn match_config(
-        transaction: &ErsteTransaction,
-        config: &'a ImporterConfig,
-    ) -> Result<Self> {
-        let mut iban = None;
-        if let Some(own_account_nr) = &transaction.owner_account_number {
-            if !own_account_nr.is_empty() {
-                // bank account (identified by its IBAN)
-                let iban_mapping = config.ibans.iter().find(|i| &i.iban == own_account_nr);
-                if let Some(iban_mapping) = iban_mapping {
-                    iban = Some(iban_mapping);
-                }
-            }
-        }
-
-        let mut card = None;
-        let card_mapping = config.cards.iter().find(|c| c.card == "Erste");
-        if let Some(card_mapping) = card_mapping {
-            card = Some(card_mapping);
-        }
-
-        let mut sepa_creditor = None;
-        if let Some(creditor_id) = &transaction.sepa_creditor_id {
-            if !creditor_id.is_empty() {
-                let sepa_creditor_mapping = config
-                    .sepa
-                    .creditors
-                    .iter()
-                    .find(|item| item.creditor_id == *creditor_id);
-                if let Some(sepa_creditor_mapping) = sepa_creditor_mapping {
-                    sepa_creditor = Some(sepa_creditor_mapping);
-                }
-            }
-        }
-
-        let mut sepa_mandate = None;
-        if let Some(mandate_id) = &transaction.sepa_mandate_id {
-            if !mandate_id.is_empty() {
-                let sepa_mandate_mapping = config
-                    .sepa
-                    .mandates
-                    .iter()
-                    .find(|item| item.mandate_id == *mandate_id);
-                if let Some(sepa_mandate_mapping) = sepa_mandate_mapping {
-                    sepa_mandate = Some(sepa_mandate_mapping);
-                }
-            }
-        }
-
-        let mut simple_mapping = None;
-        for rule in &config.mapping {
-            let regex = RegexBuilder::new(&rule.search)
-                .case_insensitive(true)
-                .build();
-            match regex {
-                Ok(regex) => {
-                    if let Some(partner_name) = &transaction.partner_name {
-                        if !partner_name.is_empty() && regex.is_match(partner_name) {
-                            simple_mapping = Some(rule);
-                            break;
-                        }
-                    }
-
-                    if let Some(reference) = &transaction.reference {
-                        if !reference.is_empty() && regex.is_match(reference) {
-                            simple_mapping = Some(rule);
-                            break;
-                        }
-                    }
-                }
-                Err(e) => return Err(ImportError::Regex(e.to_string())),
-            };
-        }
-
-        let mut creditor_debitor_mapping_account = None;
-        if let Some(partner_name) = &transaction.partner_name {
-            let mut search_amount: AmountAndCommodity = transaction.amount.clone().try_into()?;
-            search_amount.amount *= -1;
-
-            for rule in &config.creditor_and_debitor_mapping {
-                if !partner_name.contains(&rule.payee) {
-                    continue;
-                }
-
-                let begin = match rule.days_difference {
-                    Some(delta) => transaction
-                        .booking_date()?
-                        .checked_sub_days(Days::new(delta as u64)),
-                    None => None,
-                };
-                let end = match rule.days_difference {
-                    Some(delta) => transaction
-                        .booking_date()?
-                        .checked_add_days(Days::new(delta as u64 + 1)),
-                    None => None,
-                };
-
-                let hledger_transactions = query_hledger_by_payee_and_account(
-                    &config.hledger,
-                    &rule.payee,
-                    &rule.account,
-                    begin,
-                    end,
-                )?;
-                let matching_cred_or_deb_trx = hledger_transactions.iter().any(|t| {
-                    t.tpostings.iter().any(|p| {
-                        p.paccount == rule.account
-                            && p.pamount
-                                .clone()
-                                .into_iter()
-                                .filter_map(|a| a.try_into().ok())
-                                .any(|a: AmountAndCommodity| a == search_amount)
-                    })
-                });
-
-                if matching_cred_or_deb_trx {
-                    creditor_debitor_mapping_account = Some(rule.account.clone());
-                } else {
-                    creditor_debitor_mapping_account.clone_from(&rule.default_pl_account);
-                }
-                break;
-            }
-        }
-
-        let posting_against_own_iban = match &transaction.partner_account {
-            Some(partner_account) => match &partner_account.iban {
-                Some(iban) => config
-                    .ibans
-                    .iter()
-                    .any(|iban_mapping| iban_mapping.iban == *iban),
-                None => false,
-            },
-            None => false,
-        };
-
-        Ok(Self {
-            iban,
-            card,
-            sepa_creditor,
-            sepa_mandate,
-            simple_mapping,
-            creditor_debitor_mapping_account,
-            posting_against_own_iban,
-        })
     }
 }
 

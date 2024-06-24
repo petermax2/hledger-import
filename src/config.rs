@@ -3,6 +3,7 @@ use crate::{
     importers::revolut::RevolutConfig,
 };
 use homedir::get_my_home;
+use regex::RegexBuilder;
 use serde::Deserialize;
 use std::str::FromStr;
 
@@ -59,6 +60,129 @@ impl ImporterConfig {
             Err(_) => Err(ImportError::ConfigRead(path)),
         }
     }
+
+    pub fn identify_iban_opt(&self, iban: &Option<String>) -> Option<ImporterConfigTarget> {
+        match iban {
+            Some(iban) => self.identify_iban(iban),
+            None => None,
+        }
+    }
+
+    pub fn identify_iban(&self, iban: &str) -> Option<ImporterConfigTarget> {
+        self.ibans
+            .iter()
+            .find(|rule| rule.iban == iban)
+            .map(|rule| ImporterConfigTarget {
+                account: rule.account.clone(),
+                note: rule.note.clone(),
+            })
+    }
+
+    pub fn identify_card_opt(&self, card_number: &Option<String>) -> Option<ImporterConfigTarget> {
+        match card_number {
+            Some(card_number) => self.identify_card(card_number),
+            None => None,
+        }
+    }
+
+    pub fn identify_card(&self, card_number: &str) -> Option<ImporterConfigTarget> {
+        self.cards
+            .iter()
+            .find(|rule| rule.card == card_number)
+            .map(|rule| ImporterConfigTarget {
+                account: rule.account.clone(),
+                note: rule.note.clone(),
+            })
+    }
+
+    pub fn match_category(&self, category: &str) -> Option<ImporterConfigTarget> {
+        self.categories
+            .iter()
+            .find(|rule| category.contains(&rule.pattern))
+            .map(|rule| ImporterConfigTarget {
+                account: rule.account.clone(),
+                note: rule.note.clone(),
+            })
+    }
+
+    pub fn match_sepa_creditor_opt(
+        &self,
+        sepa_creditor_id: &Option<String>,
+    ) -> Option<ImporterConfigTarget> {
+        match sepa_creditor_id {
+            Some(sepa_creditor_id) => self.match_sepa_creditor(sepa_creditor_id),
+            None => None,
+        }
+    }
+
+    pub fn match_sepa_creditor(&self, sepa_creditor_id: &str) -> Option<ImporterConfigTarget> {
+        self.sepa
+            .creditors
+            .iter()
+            .find(|rule| rule.creditor_id == sepa_creditor_id)
+            .map(|rule| ImporterConfigTarget {
+                account: rule.account.clone(),
+                note: rule.note.clone(),
+            })
+    }
+
+    pub fn match_sepa_mandate_opt(
+        &self,
+        sepa_mandate_id: &Option<String>,
+    ) -> Option<ImporterConfigTarget> {
+        match sepa_mandate_id {
+            Some(sepa_mandate_id) => self.match_sepa_mandate(sepa_mandate_id),
+            None => None,
+        }
+    }
+
+    pub fn match_sepa_mandate(&self, sepa_mandate_id: &str) -> Option<ImporterConfigTarget> {
+        self.sepa
+            .mandates
+            .iter()
+            .find(|rule| rule.mandate_id == sepa_mandate_id)
+            .map(|rule| ImporterConfigTarget {
+                account: rule.account.clone(),
+                note: rule.note.clone(),
+            })
+    }
+
+    pub fn match_mapping_opt(
+        &self,
+        field: &Option<String>,
+    ) -> Result<Option<ImporterConfigTarget>> {
+        match field {
+            Some(field) => self.match_mapping(field),
+            None => Ok(None),
+        }
+    }
+
+    pub fn match_mapping(&self, field: &str) -> Result<Option<ImporterConfigTarget>> {
+        for rule in &self.mapping {
+            if rule.matches(field)? {
+                return Ok(Some(ImporterConfigTarget {
+                    account: rule.account.clone(),
+                    note: rule.note.clone(),
+                }));
+            }
+        }
+        Ok(None)
+    }
+
+    pub fn fallback(&self) -> Option<ImporterConfigTarget> {
+        self.fallback_account
+            .as_ref()
+            .map(|fallback| ImporterConfigTarget {
+                account: fallback.clone(),
+                note: None,
+            })
+    }
+}
+
+#[derive(Debug)]
+pub struct ImporterConfigTarget {
+    pub account: String,
+    pub note: Option<String>,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
@@ -128,6 +252,18 @@ pub struct SimpleMapping {
     pub search: String,
     pub account: String,
     pub note: Option<String>,
+}
+
+impl SimpleMapping {
+    pub fn matches(&self, field: &str) -> Result<bool> {
+        let regex = RegexBuilder::new(&self.search)
+            .case_insensitive(true)
+            .build();
+        match regex {
+            Ok(regex) => Ok(!field.is_empty() && regex.is_match(field)),
+            Err(e) => Err(ImportError::Regex(e.to_string())),
+        }
+    }
 }
 
 /// Represents a more complex mapping that enables the importer to post to different accounts,

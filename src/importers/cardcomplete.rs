@@ -4,7 +4,6 @@ use bigdecimal::BigDecimal;
 use chrono::NaiveDate;
 use fast_xml::de::from_reader;
 use fast_xml::DeError;
-use regex::RegexBuilder;
 use serde::Deserialize;
 
 use crate::config::ImporterConfig;
@@ -102,83 +101,47 @@ struct CCTransaction {
 
 impl CCTransaction {
     pub fn into_hledger(self, config: &ImporterConfig) -> Result<Transaction> {
+        let mut note = None;
+        let mut postings = Vec::new();
+
         let posting_date = self.posting_date()?;
-        let postings = self.postings(config)?;
         let tags = self.tags()?;
         let state = self.state();
 
-        Ok(Transaction {
-            date: posting_date,
-            code: None,
-            payee: self.merchant_name,
-            note: None,
-            state,
-            comment: None,
-            tags,
-            postings,
-        })
-    }
-
-    pub fn postings(&self, config: &ImporterConfig) -> Result<Vec<Posting>> {
-        let mut postings = Vec::new();
-
-        let account = if let Some(card_number) = &self.card_number {
-            config
-                .cards
-                .iter()
-                .find(|card| &card.card == card_number)
-                .map(|mapping| mapping.account.clone())
-        } else {
-            None
-        };
-
-        if let Some(account) = account {
-            let amount = self.amount()?;
+        let own_target = config.identify_card_opt(&self.card_number);
+        if let Some(own_target) = own_target {
+            note.clone_from(&own_target.note);
             postings.push(Posting {
-                account,
-                amount: Some(amount),
+                account: own_target.account,
+                amount: Some(self.amount()?),
                 comment: None,
                 tags: Vec::new(),
             });
         }
 
-        let mut other_account = None;
-
-        for rule in &config.mapping {
-            let regex = RegexBuilder::new(&rule.search)
-                .case_insensitive(true)
-                .build();
-            match regex {
-                Ok(regex) => {
-                    if regex.is_match(&self.merchant_name) {
-                        other_account = Some(rule.account.clone());
-                        break;
-                    }
-                }
-                Err(e) => return Err(ImportError::Regex(e.to_string())),
-            }
-        }
-
-        if other_account.is_none() {
-            other_account = config
-                .categories
-                .iter()
-                .find(|rule| self.category.contains(&rule.pattern))
-                .map(|rule| rule.account.clone());
-        }
-
-        // TODO these queries need refactoring...
-
-        if let Some(account) = other_account {
+        let other_target = config
+            .match_mapping(&self.merchant_name)?
+            .or(config.match_category(&self.category));
+        if let Some(other_target) = other_target {
+            note.clone_from(&other_target.note);
             postings.push(Posting {
-                account,
+                account: other_target.account,
                 amount: None,
                 comment: None,
                 tags: Vec::new(),
             });
         }
 
-        Ok(postings)
+        Ok(Transaction {
+            date: posting_date,
+            code: None,
+            payee: self.merchant_name,
+            note,
+            state,
+            comment: None,
+            tags,
+            postings,
+        })
     }
 
     pub fn tags(&self) -> Result<Vec<Tag>> {
