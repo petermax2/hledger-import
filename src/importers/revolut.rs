@@ -2,9 +2,9 @@ use std::str::FromStr;
 
 use bigdecimal::{BigDecimal, Zero};
 use chrono::NaiveDate;
-use regex::RegexBuilder;
 use serde::Deserialize;
 
+use crate::config::ImporterConfigTarget;
 use crate::error::Result;
 use crate::hledger::output::AmountAndCommodity;
 use crate::{
@@ -153,24 +153,14 @@ impl RevolutTransaction {
         };
 
         let other_account = if &self.transaction_type == "TOPUP" {
-            Some(config.transfer_accounts.bank.clone())
+            Some(ImporterConfigTarget {
+                account: config.transfer_accounts.bank.clone(),
+                note: None,
+            })
         } else {
-            let mut simple_account: Option<String> = None;
-            for rule in &config.mapping {
-                let regex = RegexBuilder::new(&rule.search)
-                    .case_insensitive(true)
-                    .build();
-                match regex {
-                    Ok(regex) => {
-                        if regex.is_match(&self.description) {
-                            simple_account = Some(rule.account.clone());
-                            break;
-                        }
-                    }
-                    Err(e) => return Err(ImportError::Regex(e.to_string())),
-                };
-            }
-            simple_account
+            config
+                .match_mapping(&self.description)?
+                .or(config.fallback())
         };
 
         let mut postings = vec![Posting {
@@ -195,23 +185,12 @@ impl RevolutTransaction {
 
         if let Some(other_account) = other_account {
             postings.push(Posting {
-                account: other_account,
+                account: other_account.account,
                 amount: None,
                 comment: None,
                 tags: Vec::new(),
             });
-        } else if let Some(fallback_account) = &config.fallback_account {
-            postings.push(Posting {
-                account: fallback_account.clone(),
-                amount: None,
-                comment: None,
-                tags: vec![Tag {
-                    name: "todo".to_owned(),
-                    value: None,
-                }],
-            });
         }
-
         Ok(postings)
     }
 
