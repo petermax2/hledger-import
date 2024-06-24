@@ -30,6 +30,8 @@ enum Importer {
     Erste,
     /// Revolut CSV export file
     Revolut,
+    /// Cardcomplete XML export file
+    Cardcomplete,
 }
 
 impl From<Importer> for Box<dyn HledgerImporter> {
@@ -37,6 +39,9 @@ impl From<Importer> for Box<dyn HledgerImporter> {
         match val {
             Importer::Erste => Box::new(importers::erste::HledgerErsteJsonImporter::new()),
             Importer::Revolut => Box::new(importers::revolut::RevolutCsvImporter::new()),
+            Importer::Cardcomplete => {
+                Box::new(importers::cardcomplete::CardcompleteXmlImporter::new())
+            }
         }
     }
 }

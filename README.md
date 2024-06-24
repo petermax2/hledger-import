@@ -5,10 +5,11 @@ The `hledger-import` program converts bank export files to hledger transactions.
 
 The following banks and formats are supported:
 
-- Erste Bank (JSON)
+- Erste Bank JSON exports
 - Revolut CSV exports
+- card complete XML exports
 
-This tool is work in progress.
+**This tool is work in progress!**
 
 ## Compile and Run
 
@@ -30,4 +31,3 @@ The following banks and formats will be supported soon:
 
 - flatex PDF invoice
 - flatex CSV exports of settlement accounts
-- card complete XML exports

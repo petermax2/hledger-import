@@ -220,6 +220,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
+name = "fast-xml"
+version = "0.23.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f7ffc2f9e1373cd82b4d4ce2f84f8162edd48e3932abeb19c06170b66dbbd6c"
+dependencies = [
+ "memchr",
+ "serde",
+]
+
+[[package]]
 name = "futures"
 version = "0.3.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -328,6 +338,7 @@ dependencies = [
  "chrono",
  "clap",
  "csv",
+ "fast-xml",
  "homedir",
  "num-format",
  "regex",
