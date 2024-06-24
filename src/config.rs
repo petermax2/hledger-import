@@ -14,6 +14,8 @@ pub struct ImporterConfig {
     pub ibans: Vec<IbanMapping>,
     pub cards: Vec<CardMapping>,
     pub mapping: Vec<SimpleMapping>,
+    #[serde(default)]
+    pub categories: Vec<CategoryMapping>,
     pub creditor_and_debitor_mapping: Vec<CreditorDebitorMapping>,
     pub sepa: SepaConfig,
     pub transfer_accounts: TransferAccounts,
@@ -150,6 +152,13 @@ pub struct FilterEntry {
     pub replacement: String,
 }
 
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+pub struct CategoryMapping {
+    pub pattern: String,
+    pub account: String,
+    pub note: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -193,6 +202,7 @@ mod tests {
             filter: WordFilter::default(),
             fallback_account: Some("Equity:Unassigned".to_owned()),
             revolut: None,
+            categories: vec![],
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
         assert_eq!(result, expected);
@@ -201,6 +211,9 @@ mod tests {
         cards = []
         mapping = []
         creditor_and_debitor_mapping = []
+        categories = [
+          { pattern = \"cat1\", account = \"Expenses:Cat1\" }
+        ]
 
         [sepa]
         creditors = []
@@ -238,6 +251,11 @@ mod tests {
             },
             fallback_account: None,
             revolut: None,
+            categories: vec![CategoryMapping {
+                pattern: "cat1".to_owned(),
+                account: "Expenses:Cat1".to_owned(),
+                note: None,
+            }],
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
         assert_eq!(result, expected);
@@ -250,6 +268,15 @@ mod tests {
         cards = [ { card = \"123XXX456\", account = \"Liabilities:Test\", note = \"Test\" } ]
         mapping = []
         creditor_and_debitor_mapping = []
+
+        [[categories]]
+        pattern = \"cat1\"
+        account = \"Expenses:Cat1\"
+
+        [[categories]]
+        pattern = \"cat2\"
+        account = \"Expenses:Cat2\"
+        note = \"Note\"
 
         [sepa]
         creditors = [
@@ -307,6 +334,18 @@ mod tests {
             filter: WordFilter::default(),
             fallback_account: None,
             revolut: None,
+            categories: vec![
+                CategoryMapping {
+                    pattern: "cat1".to_owned(),
+                    account: "Expenses:Cat1".to_owned(),
+                    note: None,
+                },
+                CategoryMapping {
+                    pattern: "cat2".to_owned(),
+                    account: "Expenses:Cat2".to_owned(),
+                    note: Some("Note".to_owned()),
+                },
+            ],
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
         assert_eq!(result, expected);
@@ -363,6 +402,7 @@ mod tests {
             filter: WordFilter::default(),
             fallback_account: None,
             revolut: None,
+            categories: Vec::new(),
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
         assert_eq!(result, expected);

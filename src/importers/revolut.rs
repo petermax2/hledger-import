@@ -418,6 +418,7 @@ TOPUP,Current,2024-05-19 10:02:45,2024-05-22 10:02:45,Payment from John Doe Jr,1
                     note: None,
                 },
             ],
+            categories: vec![],
             creditor_and_debitor_mapping: Vec::new(),
             sepa: SepaConfig {
                 creditors: Vec::new(),
