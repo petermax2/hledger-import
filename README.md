@@ -1,7 +1,6 @@
 # hledger Import
 
-This program is meant to be an import program to hledger. 
-The `hledger-import` program converts bank export files to hledger transactions.
+`hledger-import` imports data from bank export files (CSV, JSON, etc.) and converts the transactions into a `hledger` compatible format.
 
 The following banks and formats are supported:
 
