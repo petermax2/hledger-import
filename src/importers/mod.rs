@@ -6,3 +6,6 @@ pub mod revolut;
 
 /// hledger importer for Cardcomplete XML export files
 pub mod cardcomplete;
+
+/// hledger importer for Flatex CSV export files (of settlement accounts)
+pub mod flatex_csv;

@@ -1,6 +1,6 @@
 use crate::{
     error::{ImportError, Result},
-    importers::revolut::RevolutConfig,
+    importers::{flatex_csv::FlatexCsvConfig, revolut::RevolutConfig},
 };
 use homedir::get_my_home;
 use regex::RegexBuilder;
@@ -25,6 +25,7 @@ pub struct ImporterConfig {
     /// a fallback account can be set to balance postings that could not be assigned to any other account
     pub fallback_account: Option<String>,
     pub revolut: Option<RevolutConfig>,
+    pub flatex_csv: Option<FlatexCsvConfig>,
 }
 
 impl ImporterConfig {
@@ -339,6 +340,7 @@ mod tests {
             fallback_account: Some("Equity:Unassigned".to_owned()),
             revolut: None,
             categories: vec![],
+            flatex_csv: None,
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
         assert_eq!(result, expected);
@@ -387,6 +389,7 @@ mod tests {
             },
             fallback_account: None,
             revolut: None,
+            flatex_csv: None,
             categories: vec![CategoryMapping {
                 pattern: "cat1".to_owned(),
                 account: "Expenses:Cat1".to_owned(),
@@ -470,6 +473,7 @@ mod tests {
             filter: WordFilter::default(),
             fallback_account: None,
             revolut: None,
+            flatex_csv: None,
             categories: vec![
                 CategoryMapping {
                     pattern: "cat1".to_owned(),
@@ -538,6 +542,7 @@ mod tests {
             filter: WordFilter::default(),
             fallback_account: None,
             revolut: None,
+            flatex_csv: None,
             categories: Vec::new(),
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
