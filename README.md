@@ -8,6 +8,7 @@ The following banks and formats are supported:
 - Erste Bank JSON exports
 - Revolut CSV exports
 - card complete XML exports
+- flatex CSV exports of settlement accounts
 
 **This tool is work in progress!**
 
@@ -30,4 +31,4 @@ cargo run -- --help
 The following banks and formats will be supported soon:
 
 - flatex PDF invoice
-- flatex CSV exports of settlement accounts
+
