@@ -35,14 +35,9 @@ impl HledgerImporter for FlatexCsvImport {
                     match record {
                         Ok(record) => {
                             let hledger_rec = record.into_hledger(config)?;
-                            match &hledger_rec.code {
-                                Some(trx_nr) => {
-                                   if !known_codes.contains(trx_nr) {
-                                       transactions.push(hledger_rec);
-                                   }
-                                },
-                                None => return Err(ImportError::InputParse("transaction number was expected in flatex transaction but was not found".to_owned())),
-                            };
+                            if !known_codes.contains(&hledger_rec.code.clone().unwrap()) {
+                                transactions.push(hledger_rec);
+                            }
                         }
                         Err(e) => return Err(ImportError::InputParse(e.to_string())),
                     }
