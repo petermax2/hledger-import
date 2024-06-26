@@ -37,4 +37,10 @@ impl Display for ImportError {
     }
 }
 
+impl From<lopdf::Error> for ImportError {
+    fn from(value: lopdf::Error) -> Self {
+        Self::InputParse(value.to_string())
+    }
+}
+
 pub type Result<T> = std::result::Result<T, ImportError>;

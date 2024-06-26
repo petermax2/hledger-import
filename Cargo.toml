@@ -10,6 +10,7 @@ clap = { version = "4.5.7", features = ["derive"] }
 csv = "1.3.0"
 fast-xml = { version = "0.23.1", features = ["serialize"] }
 homedir = "0.2.1"
+lopdf = "0.32.0"
 num-format = {version = "0.4.4", features = ["with-num-bigint"]}
 regex = "1.10.5"
 serde = { version = "1.0.203", features = ["derive"] }
