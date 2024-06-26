@@ -414,6 +414,7 @@ TOPUP,Current,2024-05-19 10:02:45,2024-05-22 10:02:45,Payment from John Doe Jr,1
                 fee_account: Some("Expenses:Fee".to_owned()),
             }),
             flatex_csv: None,
+            flatex_pdf: None,
         }
     }
 }

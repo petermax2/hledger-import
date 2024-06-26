@@ -1,6 +1,6 @@
 use crate::{
     error::{ImportError, Result},
-    importers::{flatex_csv::FlatexCsvConfig, revolut::RevolutConfig},
+    importers::{flatex_csv::FlatexCsvConfig, flatex_inv::FlatexPdfConfig, revolut::RevolutConfig},
 };
 use homedir::get_my_home;
 use regex::RegexBuilder;
@@ -26,6 +26,7 @@ pub struct ImporterConfig {
     pub fallback_account: Option<String>,
     pub revolut: Option<RevolutConfig>,
     pub flatex_csv: Option<FlatexCsvConfig>,
+    pub flatex_pdf: Option<FlatexPdfConfig>,
 }
 
 impl ImporterConfig {
@@ -341,6 +342,7 @@ mod tests {
             revolut: None,
             categories: vec![],
             flatex_csv: None,
+            flatex_pdf: None,
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
         assert_eq!(result, expected);
@@ -390,6 +392,7 @@ mod tests {
             fallback_account: None,
             revolut: None,
             flatex_csv: None,
+            flatex_pdf: None,
             categories: vec![CategoryMapping {
                 pattern: "cat1".to_owned(),
                 account: "Expenses:Cat1".to_owned(),
@@ -474,6 +477,7 @@ mod tests {
             fallback_account: None,
             revolut: None,
             flatex_csv: None,
+            flatex_pdf: None,
             categories: vec![
                 CategoryMapping {
                     pattern: "cat1".to_owned(),
@@ -543,6 +547,7 @@ mod tests {
             fallback_account: None,
             revolut: None,
             flatex_csv: None,
+            flatex_pdf: None,
             categories: Vec::new(),
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
