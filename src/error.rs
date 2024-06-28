@@ -13,6 +13,7 @@ pub enum ImportError {
     Regex(String),
     Query(String),
     MissingConfig(String),
+    MissingValue(String),
 }
 
 impl Display for ImportError {
@@ -33,7 +34,20 @@ impl Display for ImportError {
             ImportError::Regex(e) => write!(f, "Configuration error in regular expression: {}", e),
             ImportError::Query(e) => write!(f, "Failed to extract transaction information from hledger: {}", e),
             ImportError::MissingConfig(section) => write!(f, "Missing section \"{}\" in configuration", section),
+            ImportError::MissingValue(val) => write!(f, "Missing value \"{}\" in document", val),
         }
+    }
+}
+
+impl From<regex::Error> for ImportError {
+    fn from(value: regex::Error) -> Self {
+        Self::Regex(value.to_string())
+    }
+}
+
+impl From<lopdf::Error> for ImportError {
+    fn from(value: lopdf::Error) -> Self {
+        Self::InputParse(value.to_string())
     }
 }
 

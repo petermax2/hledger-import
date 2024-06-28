@@ -36,6 +36,9 @@ enum Importer {
 
     /// Flatex CSV export file (of settlement accounts)
     FlatexCSV,
+
+    /// Flatex PDF invoice (of stock exchange transactions)
+    FlatexPDF,
 }
 
 impl From<Importer> for Box<dyn HledgerImporter> {
@@ -47,6 +50,7 @@ impl From<Importer> for Box<dyn HledgerImporter> {
                 Box::new(importers::cardcomplete::CardcompleteXmlImporter::new())
             }
             Importer::FlatexCSV => Box::new(importers::flatex_csv::FlatexCsvImport::new()),
+            Importer::FlatexPDF => Box::new(importers::flatex_inv::FlatexPdfInvoiceImporter::new()),
         }
     }
 }

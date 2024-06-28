@@ -9,3 +9,6 @@ pub mod cardcomplete;
 
 /// hledger importer for Flatex CSV export files (of settlement accounts)
 pub mod flatex_csv;
+
+/// hledger importer for Flatex PDF invoices
+pub mod flatex_inv;
