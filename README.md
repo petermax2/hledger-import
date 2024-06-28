@@ -2,14 +2,13 @@
 
 `hledger-import` imports data from bank export files (CSV, JSON, etc.) and converts the transactions into a `hledger` compatible format.
 
-The following banks and formats are supported:
+The following bank export formats are supported:
 
 - Erste Bank JSON exports
 - Revolut CSV exports
 - card complete XML exports
 - flatex CSV exports of settlement accounts
-
-**This tool is work in progress!**
+- flatex PDF invoice
 
 ## Compile and Run
 
@@ -27,7 +26,5 @@ cargo run -- --help
 
 ## Plans for the Future
 
-The following banks and formats will be supported soon:
-
-- flatex PDF invoice
+- better documentation
 
