@@ -12,7 +12,7 @@ pub struct AmountAndCommodity {
 
 impl Display for AmountAndCommodity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut amount = String::new();
+        let mut result_amount = String::new();
 
         let format = num_format::CustomFormat::builder()
             .grouping(num_format::Grouping::Standard)
@@ -22,6 +22,12 @@ impl Display for AmountAndCommodity {
             .unwrap();
 
         let mut amount_str = self.amount.to_string();
+
+        let negative = amount_str.starts_with('-');
+        if negative {
+            result_amount.push('-');
+        }
+
         if !amount_str.contains('.') {
             amount_str.push_str(".00");
         }
@@ -31,21 +37,21 @@ impl Display for AmountAndCommodity {
         // the part before the comma (before the decimal point)
         if let Some(before_decimal) = parts.next() {
             let mut buffer = num_format::Buffer::new();
-            let before_decimal = before_decimal.parse::<i64>().unwrap();
+            let before_decimal = before_decimal.parse::<i64>().unwrap().abs();
             buffer.write_formatted(&before_decimal, &format);
-            amount.push_str(buffer.as_str());
+            result_amount.push_str(buffer.as_str());
         }
 
         // the part after the comma (after the decimal point) - optional
         if let Some(after_decimal) = parts.next() {
-            amount.push(',');
-            amount.push_str(after_decimal);
+            result_amount.push(',');
+            result_amount.push_str(after_decimal);
             if after_decimal.len() < 2 {
-                amount.push('0');
+                result_amount.push('0');
             }
         }
 
-        write!(f, "{} {}", amount, &self.commodity)
+        write!(f, "{} {}", result_amount, &self.commodity)
     }
 }
 
@@ -215,6 +221,8 @@ impl<'a> Display for HeaderComment<'a> {
 #[cfg(test)]
 mod tests {
     use std::{str::FromStr, vec};
+
+    use bigdecimal::FromPrimitive;
 
     use super::*;
 
@@ -438,5 +446,15 @@ mod tests {
         };
         let result = t.to_string();
         assert_eq!(result, "2020-06-18 * Store | Bought something\n  ; this is a test\n  Assets:Cash                                                      -2.799,97 EUR\n  Expenses:Test\n  ; Some test");
+    }
+
+    #[test]
+    fn display_minus_one_cent() {
+        let amount = AmountAndCommodity {
+            amount: BigDecimal::from_i64(-1).unwrap() / 100,
+            commodity: "EUR".to_owned(),
+        };
+        let result = amount.to_string();
+        assert_eq!(result, "-0,01 EUR");
     }
 }
