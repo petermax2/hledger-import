@@ -572,4 +572,114 @@ mod tests {
         assert_eq!(transaction.amount.precision, 2);
         assert_eq!(&transaction.amount.currency, "EUR");
     }
+
+    #[test]
+    fn convert_minus_one_cent() {
+        let source = ErsteAmount {
+            value: -1,
+            precision: 2,
+            currency: "EUR".to_owned(),
+        };
+
+        let target = AmountAndCommodity {
+            amount: BigDecimal::from_i64(-1).unwrap() / 100,
+            commodity: "EUR".to_owned(),
+        };
+
+        assert_eq!(target, source.try_into().unwrap());
+    }
+
+    #[test]
+    fn json_convert_minus_one_cent() {
+        let json_str = "{
+  \"transactionId\": null,
+  \"containedTransactionId\": null,
+  \"booking\": \"2024-06-03T00:00:00.000+0200\",
+  \"valuation\": \"2024-06-01T00:00:00.000+0200\",
+  \"transactionDateTime\": null,
+  \"partnerName\": null,
+  \"partnerAccount\": {
+    \"iban\": \"\",
+    \"bic\": \"\",
+    \"number\": \"99999999999\",
+    \"bankCode\": \"20111\",
+    \"countryCode\": \"AT\",
+    \"prefix\": null,
+    \"secondaryId\": null
+  },
+  \"partnerAddress\": null,
+  \"partnerStructuredAddress\": null,
+  \"partnerReference\": null,
+  \"partnerOriginator\": null,
+  \"amount\": {
+    \"value\": -1,
+    \"precision\": 2,
+    \"currency\": \"EUR\"
+  },
+  \"amountSender\": null,
+  \"balance\": null,
+  \"reference\": \"TEST STORE\",
+  \"referenceNumber\": \"123456789000XXX-00YYYYYYYYYY\",
+  \"note\": null,
+  \"categories\": null,
+  \"favorite\": false,
+  \"constantSymbol\": null,
+  \"variableSymbol\": null,
+  \"specificSymbol\": null,
+  \"receiverReference\": \"\",
+  \"receiverAddress\": null,
+  \"receiverStructuredAddress\": null,
+  \"receiverIdentificationReference\": null,
+  \"receiverName\": null,
+  \"receiverModeReference\": null,
+  \"senderReference\": null,
+  \"senderAddress\": null,
+  \"senderIdentificationReference\": null,
+  \"senderModeReference\": null,
+  \"senderOriginator\": null,
+  \"cardNumber\": null,
+  \"cardLocation\": null,
+  \"cardType\": null,
+  \"cardBrand\": null,
+  \"investmentInstrumentName\": null,
+  \"bookingTypeTranslation\": null,
+  \"e2eReference\": null,
+  \"virtualCardNumber\": \"\",
+  \"virtualCardDeviceName\": \"\",
+  \"virtualCardMobilePaymentApplicationName\": \"\",
+  \"sepaMandateId\": \"\",
+  \"sepaCreditorId\": \"\",
+  \"sepaPurposeType\": null,
+  \"sepaScheme\": null,
+  \"instructionName\": null,
+  \"loanReference\": null,
+  \"paymentMethod\": null,
+  \"pinEntry\": null,
+  \"ownerOriginator\": null,
+  \"ownerAccountNumber\": null,
+  \"ownerAccountTitle\": \"JOHN DOE\",
+  \"aliasPay\": null,
+  \"ultimateCreditor\": null,
+  \"ultimateCreditorStructuredAddress\": null,
+  \"ultimateDebtor\": null,
+  \"ultimateDebtorStructuredAddress\": null,
+  \"merchantName\": null,
+  \"exchangeRateValue\": null,
+  \"foreignExchangeFee\": null,
+  \"transactionFee\": null,
+  \"statement\": null,
+  \"statementInvoice\": null
+}
+        ";
+
+        let transaction =
+            serde_json::from_str::<ErsteTransaction>(json_str).expect("JSON parsing failed");
+
+        let expected = AmountAndCommodity {
+            amount: BigDecimal::from_i64(-1).unwrap() / 100,
+            commodity: "EUR".to_owned(),
+        };
+
+        assert_eq!(expected, transaction.amount.try_into().unwrap());
+    }
 }
