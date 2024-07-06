@@ -260,11 +260,8 @@ impl SimpleMapping {
     pub fn matches(&self, field: &str) -> Result<bool> {
         let regex = RegexBuilder::new(&self.search)
             .case_insensitive(true)
-            .build();
-        match regex {
-            Ok(regex) => Ok(!field.is_empty() && regex.is_match(field)),
-            Err(e) => Err(ImportError::Regex(e.to_string())),
-        }
+            .build()?;
+        Ok(!field.is_empty() && regex.is_match(field))
     }
 }
 

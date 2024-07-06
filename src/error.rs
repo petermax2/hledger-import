@@ -1,54 +1,33 @@
-use std::{fmt::Display, str::Utf8Error};
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ImportError {
-    HledgerExection(std::io::Error),
-    StringConversion(Utf8Error),
+    #[error("Failed to interact with hledger: {0}")]
+    HledgerExection(#[from] std::io::Error),
+    #[error("Encoding or conversion error: {0}")]
+    StringConversion(#[from] std::str::Utf8Error),
+    #[error("Failed to provide the path to the configruation file. Please provide the path to the configuration file in the environment variable \"HLEDGER_IMPORT_CONFIG\" to fix this error.")]
     ConfigPath,
+    #[error("Failed to read configuration file \"{0}\"")]
     ConfigRead(std::path::PathBuf),
-    ConfigParse(toml::de::Error),
+    #[error("Failed to parse configuration file: {0}")]
+    ConfigParse(#[from] toml::de::Error),
+    #[error("Failed to read input file \"{0}\"")]
     InputFileRead(std::path::PathBuf),
+    #[error("Failed to parse input file: {0}")]
     InputParse(String),
+    #[error("Failed to parse input PDF file: {0}")]
+    PdfInputParse(#[from] lopdf::Error),
+    #[error("Can not interpret input as a number: {0}")]
     NumerConversion(String),
-    Regex(String),
+    #[error("Configuration error in regular expression: {0}")]
+    Regex(#[from] regex::Error),
+    #[error("Failed to extract transaction information from hledger: {0}")]
     Query(String),
+    #[error("Missing section \"{0}\" in configuration")]
     MissingConfig(String),
+    #[error("Missing value \"{0}\" in document")]
     MissingValue(String),
-}
-
-impl Display for ImportError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self {
-            ImportError::HledgerExection(e) => write!(f, "Failed to interact with hledger: {}",e),
-            ImportError::StringConversion(e) => write!(
-                f,
-                "Encoding/Conversion error while parsing hledger transaction code list output: {}",
-                e
-            ),
-            ImportError::ConfigPath => write!(f, "Failed to provide the path to the configruation file. Please provide the path to the configuration file in the environment variable \"HLEDGER_IMPORT_CONFIG\" to fix this error."),
-            ImportError::ConfigRead(path) => write!(f, "Failed to read configuration file \"{}\"", path.to_string_lossy()),
-            ImportError::ConfigParse(e) => write!(f, "Failed to parse configuration file: {}", e),
-            ImportError::InputFileRead(path) => write!(f, "Failed to read input file \"{}\"", path.to_string_lossy()),
-            ImportError::InputParse(msg) => write!(f, "Failed to parse input file: {}", msg),
-            ImportError::NumerConversion(txt) => write!(f, "Can not interpret \"{}\" as number (amount)", txt),
-            ImportError::Regex(e) => write!(f, "Configuration error in regular expression: {}", e),
-            ImportError::Query(e) => write!(f, "Failed to extract transaction information from hledger: {}", e),
-            ImportError::MissingConfig(section) => write!(f, "Missing section \"{}\" in configuration", section),
-            ImportError::MissingValue(val) => write!(f, "Missing value \"{}\" in document", val),
-        }
-    }
-}
-
-impl From<regex::Error> for ImportError {
-    fn from(value: regex::Error) -> Self {
-        Self::Regex(value.to_string())
-    }
-}
-
-impl From<lopdf::Error> for ImportError {
-    fn from(value: lopdf::Error) -> Self {
-        Self::InputParse(value.to_string())
-    }
 }
 
 pub type Result<T> = std::result::Result<T, ImportError>;

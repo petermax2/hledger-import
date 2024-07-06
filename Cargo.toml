@@ -4,6 +4,7 @@ version = "0.1.1"
 edition = "2021"
 
 [dependencies]
+anyhow = {version = "1.0.86", features = ["std", "backtrace"]}
 bigdecimal = {version = "0.4.4", features = ["serde"]}
 chrono = {version = "0.4.38", features = ["serde", "now"]}
 clap = { version = "4.5.7", features = ["derive"] }
@@ -15,4 +16,5 @@ num-format = {version = "0.4.4", features = ["with-num-bigint"]}
 regex = "1.10.5"
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
+thiserror = "1.0.61"
 toml = "0.8.14"
