@@ -232,8 +232,7 @@ impl ErsteTransaction {
     ) -> Result<Option<ImporterConfigTarget>> {
         match &self.partner_name {
             Some(partner_name) => {
-                let mut search_amount: AmountAndCommodity = self.amount.clone().try_into()?;
-                search_amount.amount *= -1;
+                let search_amount: AmountAndCommodity = self.amount.clone().try_into()?;
 
                 for rule in &config.creditor_and_debitor_mapping {
                     if !partner_name.contains(&rule.payee) {
@@ -260,6 +259,7 @@ impl ErsteTransaction {
                         begin,
                         end,
                     )?;
+
                     let matching_cred_or_deb_trx = hledger_transactions.iter().any(|t| {
                         t.tpostings.iter().any(|p| {
                             p.paccount == rule.account
