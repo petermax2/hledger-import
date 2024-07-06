@@ -142,6 +142,7 @@ impl RevolutTransaction {
             Some(config) => config.account.clone(),
             None => return Err(ImportError::MissingConfig("revolut".to_owned())),
         };
+
         let revolut_amount = AmountAndCommodity {
             amount: self.amount()?,
             commodity: self.currency.clone(),
@@ -164,13 +165,23 @@ impl RevolutTransaction {
         };
 
         let mut postings = vec![Posting {
-            account: revolut_account,
+            account: revolut_account.clone(),
             amount: Some(revolut_amount),
             comment: None,
             tags: Vec::new(),
         }];
 
         if fee_amount.amount != BigDecimal::zero() {
+            postings.push(Posting {
+                account: revolut_account.clone(),
+                amount: Some(AmountAndCommodity {
+                    amount: fee_amount.amount.clone() * (-1),
+                    commodity: fee_amount.commodity.clone(),
+                }),
+                comment: Some("fee".to_owned()),
+                tags: Vec::new(),
+            });
+
             if let Some(config) = &config.revolut {
                 if let Some(fee_account) = &config.fee_account {
                     postings.push(Posting {
