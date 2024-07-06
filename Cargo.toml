@@ -4,7 +4,6 @@ version = "0.1.1"
 edition = "2021"
 
 [dependencies]
-anyhow = {version = "1.0.86", features = ["std", "backtrace"]}
 bigdecimal = {version = "0.4.4", features = ["serde"]}
 chrono = {version = "0.4.38", features = ["serde", "now"]}
 clap = { version = "4.5.7", features = ["derive"] }
