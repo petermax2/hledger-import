@@ -16,6 +16,7 @@ pub enum ImportError {
     InputFileRead(std::path::PathBuf),
     #[error("Failed to parse input file: {0}")]
     InputParse(String),
+    #[cfg(feature = "flatex")]
     #[error("Failed to parse input PDF file: {0}")]
     PdfInputParse(#[from] lopdf::Error),
     #[error("Can not interpret input as a number: {0}")]

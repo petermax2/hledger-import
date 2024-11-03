@@ -20,3 +20,11 @@ jobs:
       run: cargo clippy --verbose
     - name: Run tests
       run: cargo test --verbose
+    - name: Feature tests "Revolut"
+      run: cargo test --no-default-features --features "revolut" --verbose
+    - name: Feature tests "Erste"
+      run: cargo test --no-default-features --features "erste" --verbose
+    - name: Feature tests "Cardcomplete"
+      run: cargo test --no-default-features --features "cardcomplete" --verbose
+    - name: Feature tests "Flatex"
+      run: cargo test --no-default-features --features "flatex" --verbose

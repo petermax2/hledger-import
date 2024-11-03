@@ -424,7 +424,9 @@ TOPUP,Current,2024-05-19 10:02:45,2024-05-22 10:02:45,Payment from John Doe Jr,1
                 account: "Assets:Revolut".to_owned(),
                 fee_account: Some("Expenses:Fee".to_owned()),
             }),
+            #[cfg(feature = "flatex")]
             flatex_csv: None,
+            #[cfg(feature = "flatex")]
             flatex_pdf: None,
         }
     }
