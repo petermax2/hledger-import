@@ -1,7 +1,9 @@
-use crate::{
-    error::{ImportError, Result},
-    importers::{flatex_csv::FlatexCsvConfig, flatex_inv::FlatexPdfConfig, revolut::RevolutConfig},
-};
+#[cfg(feature = "revolut")]
+use crate::importers::revolut::RevolutConfig;
+#[cfg(feature = "flatex")]
+use crate::importers::{flatex_csv::FlatexCsvConfig, flatex_inv::FlatexPdfConfig};
+
+use crate::error::{ImportError, Result};
 use homedir::get_my_home;
 use regex::RegexBuilder;
 use serde::Deserialize;
@@ -24,8 +26,11 @@ pub struct ImporterConfig {
     pub filter: WordFilter,
     /// a fallback account can be set to balance postings that could not be assigned to any other account
     pub fallback_account: Option<String>,
+    #[cfg(feature = "revolut")]
     pub revolut: Option<RevolutConfig>,
+    #[cfg(feature = "flatex")]
     pub flatex_csv: Option<FlatexCsvConfig>,
+    #[cfg(feature = "flatex")]
     pub flatex_pdf: Option<FlatexPdfConfig>,
 }
 
@@ -336,9 +341,12 @@ mod tests {
             },
             filter: WordFilter::default(),
             fallback_account: Some("Equity:Unassigned".to_owned()),
+            #[cfg(feature = "revolut")]
             revolut: None,
             categories: vec![],
+            #[cfg(feature = "flatex")]
             flatex_csv: None,
+            #[cfg(feature = "flatex")]
             flatex_pdf: None,
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
@@ -387,8 +395,11 @@ mod tests {
                 }],
             },
             fallback_account: None,
+            #[cfg(feature = "revolut")]
             revolut: None,
+            #[cfg(feature = "flatex")]
             flatex_csv: None,
+            #[cfg(feature = "flatex")]
             flatex_pdf: None,
             categories: vec![CategoryMapping {
                 pattern: "cat1".to_owned(),
@@ -472,8 +483,11 @@ mod tests {
             ],
             filter: WordFilter::default(),
             fallback_account: None,
+            #[cfg(feature = "revolut")]
             revolut: None,
+            #[cfg(feature = "flatex")]
             flatex_csv: None,
+            #[cfg(feature = "flatex")]
             flatex_pdf: None,
             categories: vec![
                 CategoryMapping {
@@ -542,8 +556,11 @@ mod tests {
             ibans: vec![],
             filter: WordFilter::default(),
             fallback_account: None,
+            #[cfg(feature = "revolut")]
             revolut: None,
+            #[cfg(feature = "flatex")]
             flatex_csv: None,
+            #[cfg(feature = "flatex")]
             flatex_pdf: None,
             categories: Vec::new(),
         };

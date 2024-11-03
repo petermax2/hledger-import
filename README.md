@@ -24,6 +24,26 @@ or start directly:
 cargo run -- --help
 ```
 
+### Features
+
+The importers are split into separate features. They can be enabled separately.
+
+The following features are available:
+
+- cardcomplete
+- erste
+- flatex
+- revolut
+
+All features are enabled per default.
+
+If you want to have a custom build with a subset of importers, you must disable the default features.
+The following examples builds `hledger-import` with only the _Revolut_ importer.
+
+```sh
+cargo build --no-default-features --features "revolut"
+```
+
 ## Plans for the Future
 
 - better documentation

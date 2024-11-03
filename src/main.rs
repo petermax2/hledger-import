@@ -26,30 +26,40 @@ pub trait HledgerImporter {
 #[derive(Debug, Clone, ValueEnum)]
 enum Importer {
     /// Erste Bank JSON export file
+    #[cfg(feature = "erste")]
     Erste,
 
     /// Revolut CSV export file
+    #[cfg(feature = "revolut")]
     Revolut,
 
     /// Cardcomplete XML export file
+    #[cfg(feature = "cardcomplete")]
     Cardcomplete,
 
     /// Flatex CSV export file (of settlement accounts)
+    #[cfg(feature = "flatex")]
     FlatexCSV,
 
     /// Flatex PDF invoice (of stock exchange transactions)
+    #[cfg(feature = "flatex")]
     FlatexPDF,
 }
 
 impl From<Importer> for Box<dyn HledgerImporter> {
     fn from(val: Importer) -> Self {
         match val {
+            #[cfg(feature = "erste")]
             Importer::Erste => Box::new(importers::erste::HledgerErsteJsonImporter::new()),
+            #[cfg(feature = "revolut")]
             Importer::Revolut => Box::new(importers::revolut::RevolutCsvImporter::new()),
+            #[cfg(feature = "cardcomplete")]
             Importer::Cardcomplete => {
                 Box::new(importers::cardcomplete::CardcompleteXmlImporter::new())
             }
+            #[cfg(feature = "flatex")]
             Importer::FlatexCSV => Box::new(importers::flatex_csv::FlatexCsvImport::new()),
+            #[cfg(feature = "flatex")]
             Importer::FlatexPDF => Box::new(importers::flatex_inv::FlatexPdfInvoiceImporter::new()),
         }
     }
