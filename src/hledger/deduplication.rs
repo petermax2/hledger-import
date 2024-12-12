@@ -8,7 +8,7 @@ pub fn get_hledger_codes(config: &HledgerConfig) -> Result<HashSet<String>> {
     let output = Command::new(&config.path).arg("codes").output();
     let output = match output {
         Ok(o) => o,
-        Err(e) => return Err(ImportError::HledgerExection(e)),
+        Err(e) => return Err(ImportError::HledgerExecution(e)),
     };
 
     let codes = match std::str::from_utf8(&output.stdout) {

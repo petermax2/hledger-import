@@ -115,7 +115,7 @@ pub fn query_hledger_by_payee_and_account(
 
     let output = match output {
         Ok(o) => o,
-        Err(e) => return Err(ImportError::HledgerExection(e)),
+        Err(e) => return Err(ImportError::HledgerExecution(e)),
     };
 
     let json_str = match std::str::from_utf8(&output.stdout) {

@@ -3,7 +3,7 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum ImportError {
     #[error("Failed to interact with hledger: {0}")]
-    HledgerExection(#[from] std::io::Error),
+    HledgerExecution(#[from] std::io::Error),
     #[error("Encoding or conversion error: {0}")]
     StringConversion(#[from] std::str::Utf8Error),
     #[error("Failed to provide the path to the configruation file. Please provide the path to the configuration file in the environment variable \"HLEDGER_IMPORT_CONFIG\" to fix this error.")]
