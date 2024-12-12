@@ -203,7 +203,7 @@ impl<'a> HeaderComment<'a> {
     }
 }
 
-impl<'a> Display for HeaderComment<'a> {
+impl Display for HeaderComment<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let asterisk_line: String = "*".repeat(78);
         let date_time = chrono::Local::now().to_rfc2822();

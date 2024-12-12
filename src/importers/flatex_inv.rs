@@ -246,7 +246,7 @@ impl<'a> FlatexPdfRegexMatcher<'a> {
     }
 }
 
-impl<'a> TryInto<NaiveDate> for FlatexPdfRegexMatcher<'a> {
+impl TryInto<NaiveDate> for FlatexPdfRegexMatcher<'_> {
     type Error = ImportError;
 
     fn try_into(self) -> std::prelude::v1::Result<NaiveDate, Self::Error> {
@@ -259,7 +259,7 @@ impl<'a> TryInto<NaiveDate> for FlatexPdfRegexMatcher<'a> {
     }
 }
 
-impl<'a> TryInto<AmountAndCommodity> for FlatexPdfRegexMatcher<'a> {
+impl TryInto<AmountAndCommodity> for FlatexPdfRegexMatcher<'_> {
     type Error = ImportError;
 
     fn try_into(self) -> std::prelude::v1::Result<AmountAndCommodity, Self::Error> {
@@ -299,7 +299,7 @@ impl<'a> TryInto<AmountAndCommodity> for FlatexPdfRegexMatcher<'a> {
     }
 }
 
-impl<'a> TryInto<BigDecimal> for FlatexPdfRegexMatcher<'a> {
+impl TryInto<BigDecimal> for FlatexPdfRegexMatcher<'_> {
     type Error = ImportError;
 
     fn try_into(self) -> std::prelude::v1::Result<BigDecimal, Self::Error> {
