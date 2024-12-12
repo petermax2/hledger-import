@@ -153,10 +153,10 @@ impl Display for Transaction {
             result = format!("{} | {}", &result, note);
         }
         if let Some(comment) = &self.comment {
-            result = format!("{}\n  ; {}", &result, comment);
+            result = format!("{}\n    ; {}", &result, comment);
         }
         self.tags.iter().for_each(|tag| {
-            result = format!("{}\n  ; {}", &result, tag);
+            result = format!("{}\n    ; {}", &result, tag);
         });
         self.postings.iter().for_each(|p| {
             result = format!("{}\n{}", &result, p);
@@ -178,17 +178,15 @@ impl Display for Posting {
         let mut render = match &self.amount {
             Some(amount) => {
                 let amount = amount.to_string();
-                // 80 is the default line length - the amount should be aligned to the right (at position 80)
-                let length_filler = 80 - 2 - amount.len() - 1;
-                format!("  {:<w$} {}", &self.account, &amount, w = length_filler)
+                format!("    {}     {}", &self.account, &amount)
             }
-            None => format!("  {}", &self.account),
+            None => format!("    {}", &self.account),
         };
         if let Some(comment) = &self.comment {
-            render = format!("{}\n  ; {}", &render, comment);
+            render = format!("{}\n    ; {}", &render, comment);
         }
         self.tags.iter().for_each(|tag| {
-            render = format!("{}\n  ; {}", &render, tag);
+            render = format!("{}\n    ; {}", &render, tag);
         });
         write!(f, "{}", &render)
     }
@@ -318,7 +316,10 @@ mod tests {
             ],
         };
         let result = posting.to_string();
-        assert_eq!(result, "  Assets:Cash                                                         -11,44 EUR\n  ; lunch:\n  ; valuation: 2024-05-02");
+        assert_eq!(
+            result,
+            "    Assets:Cash     -11,44 EUR\n    ; lunch:\n    ; valuation: 2024-05-02"
+        );
 
         let posting = Posting {
             account: String::from("Expenses:Groceries"),
@@ -327,7 +328,7 @@ mod tests {
             tags: vec![],
         };
         let result = posting.to_string();
-        assert_eq!(result, "  Expenses:Groceries");
+        assert_eq!(result, "    Expenses:Groceries");
 
         let posting = Posting {
             account: String::from("Expenses:Groceries"),
@@ -336,7 +337,7 @@ mod tests {
             tags: vec![],
         };
         let result = posting.to_string();
-        assert_eq!(result, "  Expenses:Groceries\n  ; test comment");
+        assert_eq!(result, "    Expenses:Groceries\n    ; test comment");
     }
 
     #[test]
@@ -352,7 +353,7 @@ mod tests {
             postings: vec![],
         };
         let result = t.to_string();
-        assert_eq!(result, "2024-11-22 * (ABC123) Test | Note\n  ; comment");
+        assert_eq!(result, "2024-11-22 * (ABC123) Test | Note\n    ; comment");
 
         let t = Transaction {
             date: NaiveDate::from_ymd_opt(2024, 11, 22).unwrap(),
@@ -370,7 +371,7 @@ mod tests {
         let result = t.to_string();
         assert_eq!(
             result,
-            "2024-11-22 * (ABC123) Test | Note\n  ; comment\n  ; lunch:\n  ; foo: bar"
+            "2024-11-22 * (ABC123) Test | Note\n    ; comment\n    ; lunch:\n    ; foo: bar"
         );
 
         let t = Transaction {
@@ -416,7 +417,7 @@ mod tests {
             ],
         };
         let result = t.to_string();
-        assert_eq!(result, "2020-06-18 * (123-XYZ-321) Store | Bought something\n  ; this is a test\n  Assets:Cash                                                      -2.799,97 EUR\n  Expenses:Test\n  ; Some test");
+        assert_eq!(result, "2020-06-18 * (123-XYZ-321) Store | Bought something\n    ; this is a test\n    Assets:Cash     -2.799,97 EUR\n    Expenses:Test\n    ; Some test");
 
         let t = Transaction {
             date: NaiveDate::from_ymd_opt(2020, 6, 18).unwrap(),
@@ -445,7 +446,7 @@ mod tests {
             ],
         };
         let result = t.to_string();
-        assert_eq!(result, "2020-06-18 * Store | Bought something\n  ; this is a test\n  Assets:Cash                                                      -2.799,97 EUR\n  Expenses:Test\n  ; Some test");
+        assert_eq!(result, "2020-06-18 * Store | Bought something\n    ; this is a test\n    Assets:Cash     -2.799,97 EUR\n    Expenses:Test\n    ; Some test");
     }
 
     #[test]
