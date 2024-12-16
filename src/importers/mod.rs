@@ -17,3 +17,7 @@ pub mod flatex_csv;
 /// hledger importer for Flatex PDF invoices
 #[cfg(feature = "flatex")]
 pub mod flatex_inv;
+
+/// PayPal textfile importer for tab-separated PayPal exports
+#[cfg(feature = "paypal")]
+pub mod paypal;

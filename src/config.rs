@@ -1,3 +1,5 @@
+#[cfg(feature = "paypal")]
+use crate::importers::paypal::PayPalConfig;
 #[cfg(feature = "revolut")]
 use crate::importers::revolut::RevolutConfig;
 #[cfg(feature = "flatex")]
@@ -32,6 +34,8 @@ pub struct ImporterConfig {
     pub flatex_csv: Option<FlatexCsvConfig>,
     #[cfg(feature = "flatex")]
     pub flatex_pdf: Option<FlatexPdfConfig>,
+    #[cfg(feature = "paypal")]
+    pub paypal: Option<PayPalConfig>,
 }
 
 impl ImporterConfig {
@@ -348,6 +352,8 @@ mod tests {
             flatex_csv: None,
             #[cfg(feature = "flatex")]
             flatex_pdf: None,
+            #[cfg(feature = "paypal")]
+            paypal: None,
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");
         assert_eq!(result, expected);
@@ -395,6 +401,8 @@ mod tests {
                 }],
             },
             fallback_account: None,
+            #[cfg(feature = "paypal")]
+            paypal: None,
             #[cfg(feature = "revolut")]
             revolut: None,
             #[cfg(feature = "flatex")]
@@ -489,6 +497,8 @@ mod tests {
             flatex_csv: None,
             #[cfg(feature = "flatex")]
             flatex_pdf: None,
+            #[cfg(feature = "paypal")]
+            paypal: None,
             categories: vec![
                 CategoryMapping {
                     pattern: "cat1".to_owned(),
@@ -562,6 +572,8 @@ mod tests {
             flatex_csv: None,
             #[cfg(feature = "flatex")]
             flatex_pdf: None,
+            #[cfg(feature = "paypal")]
+            paypal: None,
             categories: Vec::new(),
         };
         let result = toml::from_str::<ImporterConfig>(&config_str).expect("TOML parsing failed");

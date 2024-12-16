@@ -44,6 +44,10 @@ enum Importer {
     /// Flatex PDF invoice (of stock exchange transactions)
     #[cfg(feature = "flatex")]
     FlatexPDF,
+
+    /// PayPal TXT (tab-separated) transaction list
+    #[cfg(feature = "paypal")]
+    Paypal,
 }
 
 impl From<Importer> for Box<dyn HledgerImporter> {
@@ -61,6 +65,8 @@ impl From<Importer> for Box<dyn HledgerImporter> {
             Importer::FlatexCSV => Box::new(importers::flatex_csv::FlatexCsvImport::new()),
             #[cfg(feature = "flatex")]
             Importer::FlatexPDF => Box::new(importers::flatex_inv::FlatexPdfInvoiceImporter::new()),
+            #[cfg(feature = "paypal")]
+            Importer::Paypal => Box::new(importers::paypal::PaypalPdfImporter::new()),
         }
     }
 }
