@@ -16,6 +16,7 @@ use std::str::FromStr;
 pub struct ImporterConfig {
     #[serde(default)]
     pub hledger: HledgerConfig,
+    pub commodity_formatting_rules: Option<Vec<String>>,
     pub ibans: Vec<IbanMapping>,
     pub cards: Vec<CardMapping>,
     pub mapping: Vec<SimpleMapping>,
@@ -331,6 +332,7 @@ mod tests {
             hledger: HledgerConfig {
                 path: "/opt/homebrew/bin/hledger".to_owned(),
             },
+            commodity_formatting_rules: None,
             ibans: vec![],
             cards: vec![],
             mapping: vec![],
@@ -382,6 +384,7 @@ mod tests {
         .to_owned();
         let expected = ImporterConfig {
             hledger: HledgerConfig::default(),
+            commodity_formatting_rules: None,
             ibans: vec![],
             cards: vec![],
             mapping: vec![],
@@ -451,6 +454,7 @@ mod tests {
         .to_owned();
         let expected = ImporterConfig {
             hledger: HledgerConfig::default(),
+            commodity_formatting_rules: None,
             mapping: vec![],
             creditor_and_debitor_mapping: vec![],
             transfer_accounts: TransferAccounts {
@@ -536,6 +540,7 @@ mod tests {
         .to_owned();
         let expected = ImporterConfig {
             hledger: HledgerConfig::default(),
+            commodity_formatting_rules: None,
             mapping: vec![
                 SimpleMapping {
                     search: "Store".to_owned(),

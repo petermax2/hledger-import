@@ -12,46 +12,7 @@ pub struct AmountAndCommodity {
 
 impl Display for AmountAndCommodity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut result_amount = String::new();
-
-        let format = num_format::CustomFormat::builder()
-            .grouping(num_format::Grouping::Standard)
-            .minus_sign("-")
-            .separator(".")
-            .build()
-            .unwrap();
-
-        let mut amount_str = self.amount.to_string();
-
-        let negative = amount_str.starts_with('-');
-        if negative {
-            result_amount.push('-');
-        }
-
-        if !amount_str.contains('.') {
-            amount_str.push_str(".00");
-        }
-
-        let mut parts = amount_str.split('.');
-
-        // the part before the comma (before the decimal point)
-        if let Some(before_decimal) = parts.next() {
-            let mut buffer = num_format::Buffer::new();
-            let before_decimal = before_decimal.parse::<i64>().unwrap().abs();
-            buffer.write_formatted(&before_decimal, &format);
-            result_amount.push_str(buffer.as_str());
-        }
-
-        // the part after the comma (after the decimal point) - optional
-        if let Some(after_decimal) = parts.next() {
-            result_amount.push(',');
-            result_amount.push_str(after_decimal);
-            if after_decimal.len() < 2 {
-                result_amount.push('0');
-            }
-        }
-
-        write!(f, "{} {}", result_amount, &self.commodity)
+        write!(f, "{} {}", self.amount, &self.commodity)
     }
 }
 
@@ -265,40 +226,40 @@ mod tests {
             commodity: String::from("EUR"),
         };
         let result = amount.to_string();
-        assert_eq!(result, "-299.101,12 EUR");
+        assert_eq!(result, "-299101.12 EUR");
 
         let amount = AmountAndCommodity {
             amount: BigDecimal::from_str("1799361.99").unwrap(),
             commodity: String::from("EUR"),
         };
         let result = amount.to_string();
-        assert_eq!(result, "1.799.361,99 EUR");
+        assert_eq!(result, "1799361.99 EUR");
 
         let amount = AmountAndCommodity {
             amount: BigDecimal::from_str("0.12345678").unwrap(),
             commodity: String::from("BTC"),
         };
         let result = amount.to_string();
-        assert_eq!(result, "0,12345678 BTC");
+        assert_eq!(result, "0.12345678 BTC");
 
         let amount = AmountAndCommodity {
             amount: BigDecimal::from_str("22").unwrap(),
             commodity: String::from("GLD"),
         };
         let result = amount.to_string();
-        assert_eq!(result, "22,00 GLD");
+        assert_eq!(result, "22 GLD");
 
         let a = AmountAndCommodity {
             amount: BigDecimal::from_str("10").unwrap(),
             commodity: "EUR".to_owned(),
         };
-        assert_eq!(a.to_string(), "10,00 EUR");
+        assert_eq!(a.to_string(), "10 EUR");
 
         let a = AmountAndCommodity {
             amount: BigDecimal::from_str("12.1").unwrap(),
             commodity: "USD".to_owned(),
         };
-        assert_eq!(a.to_string(), "12,10 USD");
+        assert_eq!(a.to_string(), "12.1 USD");
     }
 
     #[test]
@@ -318,7 +279,7 @@ mod tests {
         let result = posting.to_string();
         assert_eq!(
             result,
-            "    Assets:Cash     -11,44 EUR\n    ; lunch:\n    ; valuation: 2024-05-02"
+            "    Assets:Cash     -11.44 EUR\n    ; lunch:\n    ; valuation: 2024-05-02"
         );
 
         let posting = Posting {
@@ -417,7 +378,7 @@ mod tests {
             ],
         };
         let result = t.to_string();
-        assert_eq!(result, "2020-06-18 * (123-XYZ-321) Store | Bought something\n    ; this is a test\n    Assets:Cash     -2.799,97 EUR\n    Expenses:Test\n    ; Some test");
+        assert_eq!(result, "2020-06-18 * (123-XYZ-321) Store | Bought something\n    ; this is a test\n    Assets:Cash     -2799.97 EUR\n    Expenses:Test\n    ; Some test");
 
         let t = Transaction {
             date: NaiveDate::from_ymd_opt(2020, 6, 18).unwrap(),
@@ -446,7 +407,7 @@ mod tests {
             ],
         };
         let result = t.to_string();
-        assert_eq!(result, "2020-06-18 * Store | Bought something\n    ; this is a test\n    Assets:Cash     -2.799,97 EUR\n    Expenses:Test\n    ; Some test");
+        assert_eq!(result, "2020-06-18 * Store | Bought something\n    ; this is a test\n    Assets:Cash     -2799.97 EUR\n    Expenses:Test\n    ; Some test");
     }
 
     #[test]
@@ -456,6 +417,6 @@ mod tests {
             commodity: "EUR".to_owned(),
         };
         let result = amount.to_string();
-        assert_eq!(result, "-0,01 EUR");
+        assert_eq!(result, "-0.01 EUR");
     }
 }

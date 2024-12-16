@@ -117,7 +117,11 @@ fn main() {
             let transactions: Vec<String> = transactions.iter().map(|t| t.to_string()).collect();
             let transactions = transactions.join("\n");
 
-            let transactions = match hledger_format(&config.hledger, &transactions) {
+            let transactions = match hledger_format(
+                &config.hledger,
+                &transactions,
+                &config.commodity_formatting_rules,
+            ) {
                 Ok(t) => t,
                 Err(e) => {
                     eprintln!("[ERROR] {}", e);
