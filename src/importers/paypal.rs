@@ -1,8 +1,9 @@
-use std::{collections::HashSet, str::FromStr};
+use std::str::FromStr;
 
 use bigdecimal::{BigDecimal, Zero};
 use chrono::NaiveDate;
 
+use regex::Regex;
 use serde::Deserialize;
 
 use crate::{
@@ -35,17 +36,27 @@ impl HledgerImporter for PaypalPdfImporter {
         config: &crate::config::ImporterConfig,
         _known_codes: &std::collections::HashSet<String>,
     ) -> crate::error::Result<Vec<crate::hledger::output::Transaction>> {
+        // prepare import configuration
         let paypal_config = match &config.paypal {
             Some(conf) => conf,
             None => return Err(ImportError::MissingConfig("paypal".to_string())),
         };
 
-        let exclude_types = if let Some(exclude_types) = &paypal_config.exclude_types {
-            exclude_types.iter().collect()
-        } else {
-            HashSet::new()
-        };
+        // convert the configured rules to regex matchers
+        let mut regex_errors = vec![];
 
+        let rules: Vec<PayPalRegexRuleMatcher> = paypal_config
+            .rules
+            .iter()
+            .map(PayPalRegexRuleMatcher::new)
+            .filter_map(|r| r.map_err(|e| regex_errors.push(e)).ok())
+            .collect();
+
+        if let Some(error) = regex_errors.into_iter().next() {
+            return Err(error);
+        }
+
+        // read in and parse the paypal transactions
         let mut transactions = Vec::new();
         let mut reader = csv::ReaderBuilder::new()
             .delimiter(b'\t')
@@ -58,16 +69,21 @@ impl HledgerImporter for PaypalPdfImporter {
         for record in reader.deserialize::<PayPalTransaction>() {
             let record = record.map_err(|e| ImportError::InputParse(e.to_string()))?;
 
-            if exclude_types.contains(&record.transaction_type) {
-                continue;
+            for rule in &rules {
+                if rule.matches(&record) {
+                    let ignore = rule.rule.ignore.unwrap_or(false);
+                    if !ignore {
+                        let transaction = ConfiguredPaypalTransaction {
+                            config: paypal_config,
+                            transaction: &record,
+                            rule: rule.rule,
+                        };
+                        let transaction: Transaction = transaction.try_into()?;
+                        transactions.push(transaction);
+                    }
+                    break;
+                }
             }
-
-            let transaction = ConfiguredPaypalTransaction {
-                config: paypal_config,
-                transaction: &record,
-            };
-            let transaction: Transaction = transaction.try_into()?;
-            transactions.push(transaction);
         }
 
         Ok(transactions)
@@ -104,16 +120,64 @@ struct PayPalTransaction {
 
 struct ConfiguredPaypalTransaction<'a> {
     pub config: &'a PayPalConfig,
+    pub rule: &'a PayPalMatchingRule,
     pub transaction: &'a PayPalTransaction,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct PayPalConfig {
-    pub fees_account: String,
     pub asset_account: String,
-    pub clearing_account: String,
+    pub fees_account: String,
     pub empty_payee: String,
-    pub exclude_types: Option<Vec<String>>,
+    pub rules: Vec<PayPalMatchingRule>,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+pub struct PayPalMatchingRule {
+    pub name: Option<String>,
+    #[serde[rename = "type"]]
+    pub transaction_type: Option<String>,
+    pub ignore: Option<bool>,
+    #[serde[rename = "account"]]
+    pub offset_account: Option<String>,
+}
+
+struct PayPalRegexRuleMatcher<'a> {
+    pub name: Option<Regex>,
+    pub transaction_type: Option<Regex>,
+    pub rule: &'a PayPalMatchingRule,
+}
+
+impl<'a> PayPalRegexRuleMatcher<'a> {
+    pub fn new(rule: &'a PayPalMatchingRule) -> Result<Self> {
+        let name = match &rule.name {
+            Some(n) => Some(Regex::new(n).map_err(ImportError::Regex)?),
+            None => None,
+        };
+        let transaction_type = match &rule.transaction_type {
+            Some(t) => Some(Regex::new(t).map_err(ImportError::Regex)?),
+            None => None,
+        };
+        Ok(Self {
+            name,
+            transaction_type,
+            rule,
+        })
+    }
+
+    pub fn matches(&self, transaction: &PayPalTransaction) -> bool {
+        if let Some(name) = &self.name {
+            if !name.is_match(transaction.name.trim()) {
+                return false;
+            }
+        }
+        if let Some(transaction_type) = &self.transaction_type {
+            if !transaction_type.is_match(transaction.transaction_type.trim()) {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 impl TryInto<Transaction> for ConfiguredPaypalTransaction<'_> {
@@ -162,7 +226,7 @@ impl TryInto<Transaction> for ConfiguredPaypalTransaction<'_> {
         }
 
         postings.push(Posting {
-            account: self.config.clearing_account.clone(),
+            account: self.rule.offset_account.clone().unwrap_or("".to_string()),
             amount: None,
             comment: None,
             tags: Vec::new(),
