@@ -8,7 +8,8 @@ cardcomplete = ["fast-xml"]
 erste = []
 flatex = ["csv", "lopdf"]
 revolut = ["csv"]
-default = ["cardcomplete", "erste", "flatex", "revolut"]
+paypal = ["csv"]
+default = ["cardcomplete", "erste", "flatex", "revolut","paypal"]
 
 [dependencies]
 bigdecimal = { version = "0.4.4", features = ["serde"] }
