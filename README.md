@@ -9,6 +9,7 @@ The following bank export formats are supported:
 - card complete XML exports
 - flatex CSV exports of settlement accounts
 - flatex PDF invoice
+- PayPal tab-separated transaction exports
 
 ## Compile and Run
 
@@ -34,6 +35,7 @@ The following features are available:
 - erste
 - flatex
 - revolut
+- paypal
 
 All features are enabled per default.
 
