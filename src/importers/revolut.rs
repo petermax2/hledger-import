@@ -394,6 +394,7 @@ TOPUP,Current,2024-05-19 10:02:45,2024-05-22 10:02:45,Payment from John Doe Jr,1
     fn test_config() -> ImporterConfig {
         ImporterConfig {
             hledger: HledgerConfig::default(),
+            commodity_formatting_rules: None,
             ibans: Vec::new(),
             cards: Vec::new(),
             mapping: vec![
