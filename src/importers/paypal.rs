@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr};
 
 use bigdecimal::{BigDecimal, Zero};
 use chrono::NaiveDate;
@@ -40,6 +40,12 @@ impl HledgerImporter for PaypalPdfImporter {
             None => return Err(ImportError::MissingConfig("paypal".to_string())),
         };
 
+        let exclude_types = if let Some(exclude_types) = &paypal_config.exclude_types {
+            exclude_types.iter().collect()
+        } else {
+            HashSet::new()
+        };
+
         let mut transactions = Vec::new();
         let mut reader = csv::ReaderBuilder::new()
             .delimiter(b'\t')
@@ -51,6 +57,11 @@ impl HledgerImporter for PaypalPdfImporter {
 
         for record in reader.deserialize::<PayPalTransaction>() {
             let record = record.map_err(|e| ImportError::InputParse(e.to_string()))?;
+
+            if exclude_types.contains(&record.transaction_type) {
+                continue;
+            }
+
             let transaction = ConfiguredPaypalTransaction {
                 config: paypal_config,
                 transaction: &record,
@@ -102,6 +113,7 @@ pub struct PayPalConfig {
     pub asset_account: String,
     pub clearing_account: String,
     pub empty_payee: String,
+    pub exclude_types: Option<Vec<String>>,
 }
 
 impl TryInto<Transaction> for ConfiguredPaypalTransaction<'_> {
