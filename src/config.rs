@@ -6,7 +6,7 @@ use crate::importers::revolut::RevolutConfig;
 use crate::importers::{flatex_csv::FlatexCsvConfig, flatex_inv::FlatexPdfConfig};
 
 use crate::error::{ImportError, Result};
-use homedir::get_my_home;
+use homedir::my_home;
 use regex::RegexBuilder;
 use serde::Deserialize;
 use std::str::FromStr;
@@ -47,7 +47,7 @@ impl ImporterConfig {
                 Ok(path) => Ok(path),
                 Err(_) => Err(ImportError::ConfigPath),
             },
-            Err(_) => match get_my_home() {
+            Err(_) => match my_home() {
                 Ok(home) => match home {
                     Some(home) => {
                         let mut path = home.into_os_string();
