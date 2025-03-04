@@ -6,15 +6,15 @@ use std::{
 
 use bigdecimal::{BigDecimal, Zero};
 use chrono::NaiveDate;
-use lopdf::{content::Content, Document};
+use lopdf::{Document, content::Content, decode_text_string};
 use regex::Regex;
 use serde::Deserialize;
 
-use crate::{config::ImporterConfig, error::*, hledger::output::Transaction};
 use crate::{
-    hledger::output::{AmountAndCommodity, Posting, TransactionState},
     HledgerImporter,
+    hledger::output::{AmountAndCommodity, Posting, TransactionState},
 };
+use crate::{config::ImporterConfig, error::*, hledger::output::Transaction};
 
 pub struct FlatexPdfInvoiceImporter {}
 
@@ -193,13 +193,13 @@ impl FlatexPdfInvoiceImporter {
             for operation in content.operations {
                 for operand in operation.operands {
                     match operand {
-                        lopdf::Object::String(ref text, _) => {
-                            texts.push(Document::decode_text(None, text));
+                        lopdf::Object::String(_, _) => {
+                            texts.push(decode_text_string(&operand)?);
                         }
                         lopdf::Object::Array(array) => {
                             for obj in array {
-                                if let lopdf::Object::String(ref text, _) = obj {
-                                    texts.push(Document::decode_text(None, text));
+                                if let lopdf::Object::String(_, _) = obj {
+                                    texts.push(decode_text_string(&obj)?);
                                 }
                             }
                         }
