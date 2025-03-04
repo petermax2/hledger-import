@@ -6,13 +6,13 @@ use chrono::Days;
 use chrono::NaiveDate;
 use serde::Deserialize;
 
+use crate::HledgerImporter;
 use crate::config::ImporterConfig;
 use crate::config::ImporterConfigTarget;
 use crate::error::ImportError;
 use crate::error::Result;
 use crate::hledger::output::*;
 use crate::hledger::query::query_hledger_by_payee_and_account;
-use crate::HledgerImporter;
 
 pub struct HledgerErsteJsonImporter {}
 

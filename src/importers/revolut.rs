@@ -8,9 +8,9 @@ use crate::config::ImporterConfigTarget;
 use crate::error::Result;
 use crate::hledger::output::AmountAndCommodity;
 use crate::{
+    HledgerImporter,
     error::ImportError,
     hledger::output::{Posting, Tag, Transaction, TransactionState},
-    HledgerImporter,
 };
 
 pub struct RevolutCsvImporter {}

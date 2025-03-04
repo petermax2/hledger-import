@@ -2,14 +2,14 @@ use std::str::FromStr;
 
 use bigdecimal::BigDecimal;
 use chrono::NaiveDate;
-use fast_xml::de::from_reader;
 use fast_xml::DeError;
+use fast_xml::de::from_reader;
 use serde::Deserialize;
 
+use crate::HledgerImporter;
 use crate::config::ImporterConfig;
 use crate::error::*;
 use crate::hledger::output::{AmountAndCommodity, Posting, Tag, Transaction, TransactionState};
-use crate::HledgerImporter;
 
 pub struct CardcompleteXmlImporter {}
 

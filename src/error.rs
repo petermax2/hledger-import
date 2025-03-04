@@ -6,7 +6,9 @@ pub enum ImportError {
     HledgerExecution(#[from] std::io::Error),
     #[error("Encoding or conversion error: {0}")]
     StringConversion(#[from] std::str::Utf8Error),
-    #[error("Failed to provide the path to the configruation file. Please provide the path to the configuration file in the environment variable \"HLEDGER_IMPORT_CONFIG\" to fix this error.")]
+    #[error(
+        "Failed to provide the path to the configruation file. Please provide the path to the configuration file in the environment variable \"HLEDGER_IMPORT_CONFIG\" to fix this error."
+    )]
     ConfigPath,
     #[error("Failed to read configuration file \"{0}\"")]
     ConfigRead(std::path::PathBuf),

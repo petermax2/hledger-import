@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::hledger::deduplication::get_hledger_codes;
 use crate::hledger::output::Transaction;
-use clap::{command, Parser, ValueEnum};
+use clap::{Parser, ValueEnum, command};
 use config::ImporterConfig;
 use error::Result;
 use hledger::{format::hledger_format, output::HeaderComment};

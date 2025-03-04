@@ -7,12 +7,12 @@ use regex::Regex;
 use serde::Deserialize;
 
 use crate::{
-    error::*,
-    hledger::output::{Tag, Transaction},
+    HledgerImporter,
+    hledger::output::{AmountAndCommodity, Posting, TransactionState},
 };
 use crate::{
-    hledger::output::{AmountAndCommodity, Posting, TransactionState},
-    HledgerImporter,
+    error::*,
+    hledger::output::{Tag, Transaction},
 };
 
 pub struct PaypalPdfImporter {}

@@ -378,7 +378,10 @@ mod tests {
             ],
         };
         let result = t.to_string();
-        assert_eq!(result, "2020-06-18 * (123-XYZ-321) Store | Bought something\n    ; this is a test\n    Assets:Cash     -2799.97 EUR\n    Expenses:Test\n    ; Some test");
+        assert_eq!(
+            result,
+            "2020-06-18 * (123-XYZ-321) Store | Bought something\n    ; this is a test\n    Assets:Cash     -2799.97 EUR\n    Expenses:Test\n    ; Some test"
+        );
 
         let t = Transaction {
             date: NaiveDate::from_ymd_opt(2020, 6, 18).unwrap(),
@@ -407,7 +410,10 @@ mod tests {
             ],
         };
         let result = t.to_string();
-        assert_eq!(result, "2020-06-18 * Store | Bought something\n    ; this is a test\n    Assets:Cash     -2799.97 EUR\n    Expenses:Test\n    ; Some test");
+        assert_eq!(
+            result,
+            "2020-06-18 * Store | Bought something\n    ; this is a test\n    Assets:Cash     -2799.97 EUR\n    Expenses:Test\n    ; Some test"
+        );
     }
 
     #[test]

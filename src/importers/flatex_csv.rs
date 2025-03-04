@@ -4,6 +4,7 @@ use bigdecimal::BigDecimal;
 use chrono::NaiveDate;
 use serde::Deserialize;
 
+use crate::HledgerImporter;
 use crate::config::ImporterConfig;
 use crate::error::*;
 use crate::hledger::output::AmountAndCommodity;
@@ -11,7 +12,6 @@ use crate::hledger::output::Posting;
 use crate::hledger::output::Tag;
 use crate::hledger::output::Transaction;
 use crate::hledger::output::TransactionState;
-use crate::HledgerImporter;
 
 pub struct FlatexCsvImport {}
 
