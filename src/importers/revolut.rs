@@ -45,7 +45,11 @@ impl HledgerImporter for RevolutCsvImporter {
             Ok(reader) => {
                 for record in reader.deserialize::<RevolutTransaction>() {
                     match record {
-                        Ok(record) => transactions.push(record.into_hledger(config)?),
+                        Ok(record) => {
+                            if let Some(record) = record.into_hledger(config)? {
+                                transactions.push(record);
+                            }
+                        }
                         Err(e) => return Err(ImportError::InputParse(e.to_string())),
                     }
                 }
@@ -91,7 +95,14 @@ struct RevolutTransaction {
 }
 
 impl RevolutTransaction {
-    pub fn into_hledger(self, config: &crate::config::ImporterConfig) -> Result<Transaction> {
+    pub fn into_hledger(
+        self,
+        config: &crate::config::ImporterConfig,
+    ) -> Result<Option<Transaction>> {
+        if self.should_ignore() {
+            return Ok(None);
+        }
+
         let state = self.state();
         let tags = self.tags();
         let postings = self.postings(config);
@@ -101,7 +112,7 @@ impl RevolutTransaction {
             Err(e) => return Err(ImportError::InputParse(e.to_string())),
         };
 
-        Ok(Transaction {
+        Ok(Some(Transaction {
             payee: self.description,
             code: None,
             note: None,
@@ -110,7 +121,7 @@ impl RevolutTransaction {
             state,
             tags,
             postings: postings?,
-        })
+        }))
     }
 
     pub fn state(&self) -> TransactionState {
@@ -213,6 +224,10 @@ impl RevolutTransaction {
         RevolutTransaction::amount_str_to_bigdecimal(&self.fee)
     }
 
+    pub fn should_ignore(&self) -> bool {
+        self.state.to_uppercase() != "COMPLETED"
+    }
+
     fn amount_str_to_bigdecimal(amount_str: &str) -> Result<BigDecimal> {
         let parts = amount_str.split('.');
         let part_lens: Vec<usize> = parts.into_iter().map(|p| p.len()).collect();
@@ -266,7 +281,8 @@ TOPUP,Current,2024-05-19 10:02:45,2024-05-22 10:02:45,Payment from John Doe Jr,1
             transactions.push(
                 record
                     .into_hledger(&config)
-                    .expect("Converting CSV record into hledger output failed"),
+                    .expect("Converting CSV record into hledger output failed")
+                    .expect("All transactions are completed and must therefor be converted"),
             );
         }
         dbg!(&transactions);
@@ -389,6 +405,77 @@ TOPUP,Current,2024-05-19 10:02:45,2024-05-22 10:02:45,Payment from John Doe Jr,1
 
         dbg!(&t3);
         assert!(transactions.contains(&t3));
+    }
+
+    #[test]
+    fn deserialize_reverted_trx_in_csv() {
+        let config = test_config();
+
+        // NOTE the reverted transaction should be ignored and therefor produce no output
+        let csv = "Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance
+CARD_PAYMENT,Current,2024-05-01 13:05:33,2024-05-01 16:46:56,Patreon,-24.40,0.00,EUR,COMPLETED,100.00
+CARD_PAYMENT,Current,2025-03-20 20:04:15,,redacted,-1.00,0.00,EUR,REVERTED,
+";
+
+        let mut transactions: Vec<Transaction> = Vec::new();
+        let mut reader = csv::ReaderBuilder::new()
+            .delimiter(b',')
+            .has_headers(true)
+            .double_quote(false)
+            .flexible(true)
+            .from_reader(csv.as_bytes());
+
+        for record in reader.deserialize::<RevolutTransaction>() {
+            let record = record.expect("Parsing CSV record failed");
+            let hledger_transaction = record
+                .into_hledger(&config)
+                .expect("All records are valid and conversion must not fail");
+            if let Some(hledger_transaction) = hledger_transaction {
+                transactions.push(hledger_transaction);
+            }
+        }
+        dbg!(&transactions);
+
+        assert_eq!(1, transactions.len());
+
+        let t1 = Transaction {
+            date: NaiveDate::from_ymd_opt(2024, 5, 1).unwrap(),
+            code: None,
+            payee: "Patreon".to_owned(),
+            note: None,
+            state: TransactionState::Cleared,
+            comment: None,
+            tags: vec![
+                Tag {
+                    name: "valuation".to_owned(),
+                    value: Some("2024-05-01 13:05:33".to_owned()),
+                },
+                Tag {
+                    name: "revolut_type".to_owned(),
+                    value: Some("CARD_PAYMENT".to_owned()),
+                },
+            ],
+            postings: vec![
+                Posting {
+                    account: "Assets:Revolut".to_owned(),
+                    amount: Some(AmountAndCommodity {
+                        amount: BigDecimal::from_i64(-2440).unwrap() / 100,
+                        commodity: "EUR".to_owned(),
+                    }),
+                    comment: None,
+                    tags: Vec::new(),
+                },
+                Posting {
+                    account: "Expenses:Donation".to_owned(),
+                    amount: None,
+                    comment: None,
+                    tags: Vec::new(),
+                },
+            ],
+        };
+
+        dbg!(&t1);
+        assert!(transactions.contains(&t1));
     }
 
     fn test_config() -> ImporterConfig {
