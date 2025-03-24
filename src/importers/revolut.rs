@@ -1,3 +1,4 @@
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::str::FromStr;
 
 use bigdecimal::{BigDecimal, Zero};
@@ -70,7 +71,7 @@ pub struct RevolutConfig {
     pub fee_account: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Hash)]
 struct RevolutTransaction {
     #[serde(rename = "Type")]
     pub transaction_type: String,
@@ -103,6 +104,7 @@ impl RevolutTransaction {
             return Ok(None);
         }
 
+        let code = self.transaction_hash();
         let state = self.state();
         let tags = self.tags();
         let postings = self.postings(config);
@@ -114,7 +116,7 @@ impl RevolutTransaction {
 
         Ok(Some(Transaction {
             payee: self.description,
-            code: None,
+            code: Some(code),
             note: None,
             comment: None,
             date,
@@ -246,6 +248,13 @@ impl RevolutTransaction {
 
         Ok(big_dec)
     }
+
+    fn transaction_hash(&self) -> String {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        let hash = hasher.finish();
+        format!("REVOLUT_{hash}")
+    }
 }
 
 #[cfg(test)]
@@ -291,7 +300,7 @@ TOPUP,Current,2024-05-19 10:02:45,2024-05-22 10:02:45,Payment from John Doe Jr,1
 
         let t1 = Transaction {
             date: NaiveDate::from_ymd_opt(2024, 5, 1).unwrap(),
-            code: None,
+            code: Some("REVOLUT_14079023210828270798".to_owned()),
             payee: "Patreon".to_owned(),
             note: None,
             state: TransactionState::Cleared,
@@ -330,7 +339,7 @@ TOPUP,Current,2024-05-19 10:02:45,2024-05-22 10:02:45,Payment from John Doe Jr,1
 
         let t2 = Transaction {
             date: NaiveDate::from_ymd_opt(2024, 5, 4).unwrap(),
-            code: None,
+            code: Some("REVOLUT_10435277453627008552".to_owned()),
             payee: "Apple".to_owned(),
             note: None,
             state: TransactionState::Cleared,
@@ -369,7 +378,7 @@ TOPUP,Current,2024-05-19 10:02:45,2024-05-22 10:02:45,Payment from John Doe Jr,1
 
         let t3 = Transaction {
             date: NaiveDate::from_ymd_opt(2024, 5, 22).unwrap(),
-            code: None,
+            code: Some("REVOLUT_6168862174364567230".to_owned()),
             payee: "Payment from John Doe Jr".to_owned(),
             note: None,
             state: TransactionState::Cleared,
@@ -440,7 +449,7 @@ CARD_PAYMENT,Current,2025-03-20 20:04:15,,redacted,-1.00,0.00,EUR,REVERTED,
 
         let t1 = Transaction {
             date: NaiveDate::from_ymd_opt(2024, 5, 1).unwrap(),
-            code: None,
+            code: Some("REVOLUT_14079023210828270798".to_owned()),
             payee: "Patreon".to_owned(),
             note: None,
             state: TransactionState::Cleared,
