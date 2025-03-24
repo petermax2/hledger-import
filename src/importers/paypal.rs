@@ -8,6 +8,7 @@ use serde::Deserialize;
 
 use crate::{
     HledgerImporter,
+    hasher::transaction_hash,
     hledger::output::{AmountAndCommodity, Posting, TransactionState},
 };
 use crate::{
@@ -94,7 +95,7 @@ impl HledgerImporter for PaypalPdfImporter {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Hash)]
 struct PayPalTransaction {
     #[serde(rename = "Datum")]
     pub posting_date: String,
@@ -184,6 +185,8 @@ impl TryInto<Transaction> for ConfiguredPaypalTransaction<'_> {
     type Error = ImportError;
 
     fn try_into(self) -> std::result::Result<Transaction, Self::Error> {
+        let code = transaction_hash("PAYPAL", &self.transaction);
+
         let date = NaiveDate::parse_from_str(&self.transaction.posting_date, "%d.%m.%Y")
             .map_err(|e| ImportError::InputParse(e.to_string()))?;
 
@@ -236,7 +239,7 @@ impl TryInto<Transaction> for ConfiguredPaypalTransaction<'_> {
             date,
             postings,
             payee,
-            code: None,
+            code: Some(code),
             comment: None,
             state: TransactionState::Cleared,
             note: Some(self.transaction.transaction_type.clone()),
