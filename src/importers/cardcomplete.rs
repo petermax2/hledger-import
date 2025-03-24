@@ -9,6 +9,7 @@ use serde::Deserialize;
 use crate::HledgerImporter;
 use crate::config::ImporterConfig;
 use crate::error::*;
+use crate::hasher::transaction_hash;
 use crate::hledger::output::{AmountAndCommodity, Posting, Tag, Transaction, TransactionState};
 
 pub struct CardcompleteXmlImporter {}
@@ -66,7 +67,7 @@ struct CCDocument {
 }
 
 /// XML representation of Cardcomplete transaction export
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Hash)]
 struct CCTransaction {
     #[serde(rename = "HAENLDERNAME-MERCHANT_NAME")]
     pub merchant_name: String,
@@ -104,6 +105,7 @@ impl CCTransaction {
         let mut note = None;
         let mut postings = Vec::new();
 
+        let code = transaction_hash("CC", &self);
         let posting_date = self.posting_date()?;
         let tags = self.tags()?;
         let state = self.state();
@@ -135,7 +137,7 @@ impl CCTransaction {
 
         Ok(Transaction {
             date: posting_date,
-            code: None,
+            code: Some(code),
             payee: self.merchant_name,
             note,
             state,
