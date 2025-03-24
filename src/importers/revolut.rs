@@ -1,4 +1,4 @@
-use std::hash::{DefaultHasher, Hash, Hasher};
+use std::hash::Hash;
 use std::str::FromStr;
 
 use bigdecimal::{BigDecimal, Zero};
@@ -7,6 +7,7 @@ use serde::Deserialize;
 
 use crate::config::ImporterConfigTarget;
 use crate::error::Result;
+use crate::hasher::transaction_hash;
 use crate::hledger::output::AmountAndCommodity;
 use crate::{
     HledgerImporter,
@@ -104,7 +105,7 @@ impl RevolutTransaction {
             return Ok(None);
         }
 
-        let code = self.transaction_hash();
+        let code = transaction_hash("REVOLUT", &self);
         let state = self.state();
         let tags = self.tags();
         let postings = self.postings(config);
@@ -247,13 +248,6 @@ impl RevolutTransaction {
         };
 
         Ok(big_dec)
-    }
-
-    fn transaction_hash(&self) -> String {
-        let mut hasher = DefaultHasher::new();
-        self.hash(&mut hasher);
-        let hash = hasher.finish();
-        format!("REVOLUT_{hash}")
     }
 }
 

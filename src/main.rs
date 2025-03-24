@@ -9,6 +9,7 @@ use hledger::{format::hledger_format, output::HeaderComment};
 
 pub mod config;
 pub mod error;
+pub mod hasher;
 pub mod hledger;
 pub mod importers;
 
