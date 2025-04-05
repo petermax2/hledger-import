@@ -226,7 +226,17 @@ impl ErsteTransaction {
         &self,
         config: &ImporterConfig,
     ) -> Result<Option<ImporterConfigTarget>> {
-        match &self.partner_name {
+        let partner_name = self
+            .partner_name
+            .as_ref()
+            .filter(|name| !name.is_empty())
+            .or_else(|| {
+                self.reference
+                    .as_ref()
+                    .filter(|ref_str| !ref_str.is_empty())
+            });
+
+        match &partner_name {
             Some(partner_name) => {
                 let search_amount: AmountAndCommodity = self.amount.clone().try_into()?;
 
