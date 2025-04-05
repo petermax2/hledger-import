@@ -34,7 +34,6 @@ impl HledgerImporter for RevolutCsvImporter {
         &self,
         input_file: &std::path::Path,
         config: &crate::config::ImporterConfig,
-        _known_codes: &std::collections::HashSet<String>,
     ) -> crate::error::Result<Vec<crate::hledger::output::Transaction>> {
         let mut transactions = Vec::new();
         let mut reader = csv::ReaderBuilder::new()

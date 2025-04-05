@@ -18,7 +18,6 @@ pub trait HledgerImporter {
         &self,
         input_file: &std::path::Path,
         config: &ImporterConfig,
-        known_codes: &HashSet<String>,
     ) -> Result<Vec<Transaction>>;
 
     fn output_title(&self) -> &'static str;
@@ -113,9 +112,19 @@ fn main() {
     };
 
     let importer: Box<dyn HledgerImporter> = args.file_type.into();
-    match importer.parse(&args.input_file, &config, &codes) {
+    match importer.parse(&args.input_file, &config) {
         Ok(transactions) => {
-            let transactions: Vec<String> = transactions.iter().map(|t| t.to_string()).collect();
+            let transactions: Vec<String> = transactions
+                .iter()
+                .filter(|t| {
+                    // handle deduplication - if no transaction code is provided, the transaction must be considered to be unique
+                    match &t.code {
+                        Some(code) => !codes.contains(code),
+                        None => true,
+                    }
+                })
+                .map(|t| t.to_string())
+                .collect();
             let transactions = transactions.join("\n");
 
             let transactions = match hledger_format(

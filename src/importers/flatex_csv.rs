@@ -20,7 +20,6 @@ impl HledgerImporter for FlatexCsvImport {
         &self,
         input_file: &std::path::Path,
         config: &crate::config::ImporterConfig,
-        known_codes: &std::collections::HashSet<String>,
     ) -> crate::error::Result<Vec<crate::hledger::output::Transaction>> {
         let mut transactions = Vec::new();
         let mut reader = csv::ReaderBuilder::new()
@@ -35,9 +34,7 @@ impl HledgerImporter for FlatexCsvImport {
                     match record {
                         Ok(record) => {
                             let hledger_rec = record.into_hledger(config)?;
-                            if !known_codes.contains(&hledger_rec.code.clone().unwrap()) {
-                                transactions.push(hledger_rec);
-                            }
+                            transactions.push(hledger_rec);
                         }
                         Err(e) => return Err(ImportError::InputParse(e.to_string())),
                     }

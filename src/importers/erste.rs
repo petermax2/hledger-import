@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use bigdecimal::BigDecimal;
 use bigdecimal::FromPrimitive;
 use chrono::Days;
@@ -33,14 +31,12 @@ impl HledgerImporter for HledgerErsteJsonImporter {
         &self,
         input_file: &std::path::Path,
         config: &ImporterConfig,
-        known_codes: &HashSet<String>,
     ) -> Result<Vec<Transaction>> {
         match std::fs::read_to_string(input_file) {
             Ok(content) => match serde_json::from_str::<Vec<ErsteTransaction>>(&content) {
                 Ok(transactions) => {
                     let result = transactions
                         .into_iter()
-                        .filter(|t| !known_codes.contains(&t.reference_number))
                         .map(|t| t.into_hledger(config))
                         .collect::<Result<Vec<_>>>()?;
                     Ok(result)

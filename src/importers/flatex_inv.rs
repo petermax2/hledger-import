@@ -35,18 +35,10 @@ impl HledgerImporter for FlatexPdfInvoiceImporter {
         &self,
         input_file: &std::path::Path,
         config: &crate::config::ImporterConfig,
-        known_codes: &std::collections::HashSet<String>,
     ) -> crate::error::Result<Vec<crate::hledger::output::Transaction>> {
         let texts = self.extract_text_from_pdf(input_file)?;
-
         let transaction = self.try_into_hledger(config, &texts)?;
-        let code = transaction.code.as_ref().unwrap();
-
-        if known_codes.contains(code) {
-            Ok(vec![])
-        } else {
-            Ok(vec![transaction])
-        }
+        Ok(vec![transaction])
     }
 
     fn output_title(&self) -> &'static str {

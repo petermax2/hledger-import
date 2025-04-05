@@ -35,7 +35,6 @@ impl HledgerImporter for PaypalPdfImporter {
         &self,
         input_file: &std::path::Path,
         config: &crate::config::ImporterConfig,
-        _known_codes: &std::collections::HashSet<String>,
     ) -> crate::error::Result<Vec<crate::hledger::output::Transaction>> {
         // prepare import configuration
         let paypal_config = match &config.paypal {

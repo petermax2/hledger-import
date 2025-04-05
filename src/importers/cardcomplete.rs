@@ -31,7 +31,6 @@ impl HledgerImporter for CardcompleteXmlImporter {
         &self,
         input_file: &std::path::Path,
         config: &crate::config::ImporterConfig,
-        _known_codes: &std::collections::HashSet<String>,
     ) -> Result<Vec<Transaction>> {
         let file = match std::fs::File::open(input_file) {
             Ok(file) => file,
