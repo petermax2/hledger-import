@@ -82,7 +82,7 @@ pub fn query_hledger_by_payee_and_account(
             .arg("-e")
             .arg(end.unwrap().format("%Y-%m-%d").to_string())
             .arg(account)
-            .output()
+            .output()?
     } else if let Some(begin) = begin {
         Command::new(&config.path)
             .arg("print")
@@ -92,7 +92,7 @@ pub fn query_hledger_by_payee_and_account(
             .arg("-b")
             .arg(begin.format("%Y-%m-%d").to_string())
             .arg(account)
-            .output()
+            .output()?
     } else if let Some(end) = end {
         Command::new(&config.path)
             .arg("print")
@@ -102,7 +102,7 @@ pub fn query_hledger_by_payee_and_account(
             .arg("-e")
             .arg(end.format("%Y-%m-%d").to_string())
             .arg(account)
-            .output()
+            .output()?
     } else {
         Command::new(&config.path)
             .arg("print")
@@ -110,18 +110,10 @@ pub fn query_hledger_by_payee_and_account(
             .arg("json")
             .arg(format!("payee:{}", payee))
             .arg(account)
-            .output()
+            .output()?
     };
 
-    let output = match output {
-        Ok(o) => o,
-        Err(e) => return Err(ImportError::HledgerExecution(e)),
-    };
-
-    let json_str = match std::str::from_utf8(&output.stdout) {
-        Ok(c) => c,
-        Err(e) => return Err(ImportError::StringConversion(e)),
-    };
+    let json_str = std::str::from_utf8(&output.stdout)?;
 
     match serde_json::from_str(json_str) {
         Ok(result) => Ok(result),
