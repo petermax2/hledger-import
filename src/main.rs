@@ -88,63 +88,46 @@ struct ImporterArgs {
     deduplicate: bool,
 }
 
-fn main() {
+fn run_importer() -> Result<()> {
     let args = ImporterArgs::parse();
-
-    let config = match ImporterConfig::load() {
-        Ok(config) => config,
-        Err(e) => {
-            eprintln!("[ERROR] {}", e);
-            return;
-        }
-    };
+    let config = ImporterConfig::load()?;
 
     let codes = if args.deduplicate {
-        match get_hledger_codes(&config.hledger) {
-            Ok(codes) => codes,
-            Err(e) => {
-                eprintln!("[ERROR] {}", e);
-                return;
-            }
-        }
+        get_hledger_codes(&config.hledger)?
     } else {
         HashSet::new()
     };
 
     let importer: Box<dyn HledgerImporter> = args.file_type.into();
-    match importer.parse(&args.input_file, &config) {
-        Ok(transactions) => {
-            let transactions: Vec<String> = transactions
-                .iter()
-                .filter(|t| {
-                    // handle deduplication - if no transaction code is provided, the transaction must be considered to be unique
-                    match &t.code {
-                        Some(code) => !codes.contains(code),
-                        None => true,
-                    }
-                })
-                .map(|t| t.to_string())
-                .collect();
-            let transactions = transactions.join("\n");
+    let transactions = importer.parse(&args.input_file, &config)?;
+    let transactions: Vec<String> = transactions
+        .iter()
+        .filter(|t| {
+            // handle deduplication - if no transaction code is provided, the transaction must be considered to be unique
+            match &t.code {
+                Some(code) => !codes.contains(code),
+                None => true,
+            }
+        })
+        .map(|t| t.to_string())
+        .collect();
+    let transactions = transactions.join("\n");
 
-            let transactions = match hledger_format(
-                &config.hledger,
-                &transactions,
-                &config.commodity_formatting_rules,
-            ) {
-                Ok(t) => t,
-                Err(e) => {
-                    eprintln!("[ERROR] {}", e);
-                    return;
-                }
-            };
+    let transactions = hledger_format(
+        &config.hledger,
+        &transactions,
+        &config.commodity_formatting_rules,
+    )?;
 
-            println!("{}", HeaderComment::new(importer.output_title()));
-            println!("{}", transactions);
-            println!();
-        }
-        Err(e) => {
-            eprintln!("[ERROR] {}", e);
-        }
-    };
+    let title = HeaderComment::new(importer.output_title());
+
+    println!("{}\n{}", title, transactions);
+
+    Ok(())
+}
+
+fn main() {
+    if let Err(e) = run_importer() {
+        eprintln!("[ERROR] {}", e);
+    }
 }
