@@ -484,6 +484,7 @@ CARD_PAYMENT,Current,2025-03-20 20:04:15,,redacted,-1.00,0.00,EUR,REVERTED,
         ImporterConfig {
             hledger: HledgerConfig::default(),
             commodity_formatting_rules: None,
+            deduplication_accounts: None,
             ibans: Vec::new(),
             cards: Vec::new(),
             mapping: vec![

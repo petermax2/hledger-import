@@ -9,7 +9,7 @@ use crate::error::{ImportError, Result};
 use homedir::my_home;
 use regex::RegexBuilder;
 use serde::Deserialize;
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr};
 
 /// encapsulation of the application configuration
 #[derive(Debug, Deserialize, PartialEq, Eq)]
@@ -17,6 +17,7 @@ pub struct ImporterConfig {
     #[serde(default)]
     pub hledger: HledgerConfig,
     pub commodity_formatting_rules: Option<Vec<String>>,
+    pub deduplication_accounts: Option<HashSet<String>>,
     pub ibans: Vec<IbanMapping>,
     pub cards: Vec<CardMapping>,
     pub mapping: Vec<SimpleMapping>,
@@ -333,6 +334,7 @@ mod tests {
                 path: "/opt/homebrew/bin/hledger".to_owned(),
             },
             commodity_formatting_rules: None,
+            deduplication_accounts: None,
             ibans: vec![],
             cards: vec![],
             mapping: vec![],
@@ -385,6 +387,7 @@ mod tests {
         let expected = ImporterConfig {
             hledger: HledgerConfig::default(),
             commodity_formatting_rules: None,
+            deduplication_accounts: None,
             ibans: vec![],
             cards: vec![],
             mapping: vec![],
@@ -455,6 +458,7 @@ mod tests {
         let expected = ImporterConfig {
             hledger: HledgerConfig::default(),
             commodity_formatting_rules: None,
+            deduplication_accounts: None,
             mapping: vec![],
             creditor_and_debitor_mapping: vec![],
             transfer_accounts: TransferAccounts {
@@ -541,6 +545,7 @@ mod tests {
         let expected = ImporterConfig {
             hledger: HledgerConfig::default(),
             commodity_formatting_rules: None,
+            deduplication_accounts: None,
             mapping: vec![
                 SimpleMapping {
                     search: "Store".to_owned(),

@@ -88,18 +88,43 @@ struct ImporterArgs {
     deduplicate: bool,
 }
 
+fn get_known_transaction_codes(
+    deduplicate: bool,
+    config: &ImporterConfig,
+    transactions: &Vec<Transaction>,
+) -> Result<HashSet<String>> {
+    let codes = if deduplicate {
+        let mut accounts: HashSet<String> = HashSet::with_capacity(1);
+        if let Some(deduplication_accounts) = &config.deduplication_accounts {
+            if !deduplication_accounts.is_empty() {
+                for t in transactions {
+                    for p in &t.postings {
+                        if !accounts.contains(&p.account)
+                            && deduplication_accounts.contains(&p.account)
+                        {
+                            accounts.insert(p.account.clone());
+                        }
+                    }
+                }
+            }
+        }
+
+        get_hledger_codes(&config.hledger, accounts)?
+    } else {
+        HashSet::new()
+    };
+    Ok(codes)
+}
+
 fn run_importer() -> Result<()> {
     let args = ImporterArgs::parse();
     let config = ImporterConfig::load()?;
 
-    let codes = if args.deduplicate {
-        get_hledger_codes(&config.hledger)?
-    } else {
-        HashSet::new()
-    };
-
     let importer: Box<dyn HledgerImporter> = args.file_type.into();
     let transactions = importer.parse(&args.input_file, &config)?;
+
+    let codes = get_known_transaction_codes(args.deduplicate, &config, &transactions)?;
+
     let transactions: Vec<String> = transactions
         .iter()
         .filter(|t| {
