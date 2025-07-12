@@ -112,9 +112,9 @@ struct PayPalTransaction {
     pub currency: String,
     #[serde[rename = "Brutto"]]
     pub gross_amount: String,
-    #[serde[rename = "Gebühr"]]
+    #[serde[rename = "Gebühren"]]
     pub fee: String,
-    #[serde[rename = "Netto"]]
+    #[serde[rename = "Summe"]]
     pub net_amount: String,
 }
 
