@@ -85,7 +85,7 @@ impl Display for TransactionState {
             TransactionState::Cleared => "*",
             TransactionState::Pending => "!",
         };
-        write!(f, "{}", c)
+        write!(f, "{c}")
     }
 }
 
