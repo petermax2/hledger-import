@@ -146,13 +146,13 @@ fn run_importer() -> Result<()> {
 
     let title = HeaderComment::new(importer.output_title());
 
-    println!("{}\n{}", title, transactions);
+    println!("{title}\n{transactions}");
 
     Ok(())
 }
 
 fn main() {
     if let Err(e) = run_importer() {
-        eprintln!("[ERROR] {}", e);
+        eprintln!("[ERROR] {e}");
     }
 }
