@@ -16,6 +16,9 @@ use std::{collections::HashSet, str::FromStr};
 pub struct ImporterConfig {
     #[serde(default)]
     pub hledger: HledgerConfig,
+    #[cfg(feature = "flatex")]
+    #[serde(default)]
+    pub poppler: PopplerConfig,
     pub commodity_formatting_rules: Option<Vec<String>>,
     pub deduplication_accounts: Option<HashSet<String>>,
     pub ibans: Vec<IbanMapping>,
@@ -211,6 +214,21 @@ impl Default for HledgerConfig {
     }
 }
 
+#[cfg(feature = "flatex")]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+pub struct PopplerConfig {
+    pub path: String,
+}
+
+#[cfg(feature = "flatex")]
+impl Default for PopplerConfig {
+    fn default() -> Self {
+        Self {
+            path: "pdftotext".to_owned(),
+        }
+    }
+}
+
 /// Maps an IBAN to a hleger asset/liability account
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct IbanMapping {
@@ -327,11 +345,18 @@ mod tests {
 
         [hledger]
         path = \"/opt/homebrew/bin/hledger\"
+
+        [poppler]
+        path = \"/usr/bin/pdftotext\"
         "
         .to_owned();
         let expected = ImporterConfig {
             hledger: HledgerConfig {
                 path: "/opt/homebrew/bin/hledger".to_owned(),
+            },
+            #[cfg(feature = "flatex")]
+            poppler: PopplerConfig {
+                path: "/usr/bin/pdftotext".to_owned(),
             },
             commodity_formatting_rules: None,
             deduplication_accounts: None,
@@ -386,6 +411,8 @@ mod tests {
         .to_owned();
         let expected = ImporterConfig {
             hledger: HledgerConfig::default(),
+            #[cfg(feature = "flatex")]
+            poppler: PopplerConfig::default(),
             commodity_formatting_rules: None,
             deduplication_accounts: None,
             ibans: vec![],
@@ -457,6 +484,8 @@ mod tests {
         .to_owned();
         let expected = ImporterConfig {
             hledger: HledgerConfig::default(),
+            #[cfg(feature = "flatex")]
+            poppler: PopplerConfig::default(),
             commodity_formatting_rules: None,
             deduplication_accounts: None,
             mapping: vec![],
@@ -544,6 +573,8 @@ mod tests {
         .to_owned();
         let expected = ImporterConfig {
             hledger: HledgerConfig::default(),
+            #[cfg(feature = "flatex")]
+            poppler: PopplerConfig::default(),
             commodity_formatting_rules: None,
             deduplication_accounts: None,
             mapping: vec![

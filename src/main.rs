@@ -13,6 +13,9 @@ pub mod hasher;
 pub mod hledger;
 pub mod importers;
 
+#[cfg(feature = "flatex")]
+pub mod pdftotext;
+
 pub trait HledgerImporter {
     fn parse(
         &self,
