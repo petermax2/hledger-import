@@ -19,8 +19,14 @@ pub enum ImportError {
     #[error("Failed to parse input file: {0}")]
     InputParse(String),
     #[cfg(feature = "flatex")]
-    #[error("Failed to parse input PDF file: {0}")]
-    PdfInputParse(#[from] lopdf::Error),
+    #[error("Failed to create temporary file: {0}")]
+    TemporaryFileCreationError(std::io::Error),
+    #[cfg(feature = "flatex")]
+    #[error("Failed to read from temporary file: {0}")]
+    TemporaryFileReadError(std::io::Error),
+    #[cfg(feature = "flatex")]
+    #[error("Failed to control poppler/pdftotext process: {0}")]
+    PopplerProcessError(std::io::Error),
     #[error("Can not interpret input as a number: {0}")]
     NumerConversion(String),
     #[error("Configuration error in regular expression: {0}")]

@@ -254,6 +254,9 @@ impl RevolutTransaction {
 mod tests {
     use bigdecimal::FromPrimitive;
 
+    #[cfg(feature = "flatex")]
+    use crate::config::PopplerConfig;
+
     use crate::config::{
         HledgerConfig, ImporterConfig, SepaConfig, SimpleMapping, TransferAccounts,
     };
@@ -483,6 +486,8 @@ CARD_PAYMENT,Current,2025-03-20 20:04:15,,redacted,-1.00,0.00,EUR,REVERTED,
     fn test_config() -> ImporterConfig {
         ImporterConfig {
             hledger: HledgerConfig::default(),
+            #[cfg(feature = "flatex")]
+            poppler: PopplerConfig::default(),
             commodity_formatting_rules: None,
             deduplication_accounts: None,
             ibans: Vec::new(),
