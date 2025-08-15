@@ -1,6 +1,6 @@
 [package]
 name = "hledger-import"
-version = "0.7.0"
+version = "0.7.1-SNAPSHOT"
 edition = "2024"
 
 [features]
