@@ -33,7 +33,7 @@ impl HledgerImporter for FlatexPdfInvoiceImporter {
         config: &crate::config::ImporterConfig,
     ) -> crate::error::Result<Vec<crate::hledger::output::Transaction>> {
         let text = pdftotext::extract_text_from_pdf(&config.poppler, input_file)?;
-        let transaction = self.try_into_hledger(config, &vec![text])?; // TODO replace this vector with String
+        let transaction = self.try_into_hledger(config, &text)?;
         Ok(vec![transaction])
     }
 
@@ -43,25 +43,21 @@ impl HledgerImporter for FlatexPdfInvoiceImporter {
 }
 
 impl FlatexPdfInvoiceImporter {
-    fn try_into_hledger(
-        &self,
-        config: &ImporterConfig,
-        texts: &Vec<String>,
-    ) -> Result<Transaction> {
+    fn try_into_hledger(&self, config: &ImporterConfig, text: &str) -> Result<Transaction> {
         let flatex_conf = match &config.flatex_pdf {
             Some(conf) => conf,
             None => return Err(ImportError::MissingConfig("flatex_pdf".to_owned())),
         };
 
         let date: NaiveDate =
-            FlatexPdfRegexMatcher::new(texts, &flatex_conf.date_search, "transaction date")?
+            FlatexPdfRegexMatcher::new(text, &flatex_conf.date_search, "transaction date")?
                 .try_into()?;
 
-        let code = FlatexPdfRegexMatcher::new(texts, &flatex_conf.code_search, "transaction code")?
+        let code = FlatexPdfRegexMatcher::new(text, &flatex_conf.code_search, "transaction code")?
             .first_capture();
 
         let payee = FlatexPdfRegexMatcher::new(
-            texts,
+            text,
             &flatex_conf.payee_search,
             "stock exchange or bank institute",
         )?
@@ -71,7 +67,7 @@ impl FlatexPdfInvoiceImporter {
         ))?;
 
         let total: AmountAndCommodity =
-            FlatexPdfRegexMatcher::new(texts, &flatex_conf.total_amount_search, "total amount")?
+            FlatexPdfRegexMatcher::new(text, &flatex_conf.total_amount_search, "total amount")?
                 .try_into()?;
 
         // prepare postings
@@ -85,7 +81,7 @@ impl FlatexPdfInvoiceImporter {
 
         for posting_rule in &flatex_conf.postings {
             let amount: AmountAndCommodity = FlatexPdfRegexMatcher::new(
-                texts,
+                text,
                 &posting_rule.search_for,
                 &posting_rule.description,
             )?
@@ -110,7 +106,7 @@ impl FlatexPdfInvoiceImporter {
         }
 
         let commodity_amount: BigDecimal = FlatexPdfRegexMatcher::new(
-            texts,
+            text,
             &flatex_conf.commodity_amount_search,
             "commodity amount",
         )?
@@ -119,7 +115,7 @@ impl FlatexPdfInvoiceImporter {
         let mut commodity = None;
         for commodity_rule in &flatex_conf.commodities {
             let matching =
-                FlatexPdfRegexMatcher::new(texts, &commodity_rule.search_for, "commodity")?
+                FlatexPdfRegexMatcher::new(text, &commodity_rule.search_for, "commodity")?
                     .any_match();
             if matching {
                 commodity = Some(commodity_rule);
@@ -159,35 +155,33 @@ impl FlatexPdfInvoiceImporter {
 }
 
 struct FlatexPdfRegexMatcher<'a> {
-    texts: &'a Vec<String>,
+    text: &'a str,
     regex: Regex,
     value_description: &'a str,
 }
 
 impl<'a> FlatexPdfRegexMatcher<'a> {
-    pub fn new(texts: &'a Vec<String>, regex: &str, value_description: &'a str) -> Result<Self> {
+    pub fn new(text: &'a str, regex: &str, value_description: &'a str) -> Result<Self> {
         let regex = Regex::new(regex)?;
 
         Ok(Self {
-            texts,
+            text,
             regex,
             value_description,
         })
     }
 
     pub fn first_capture(&self) -> Option<String> {
-        for t in self.texts {
-            if let Some(captures) = self.regex.captures(t) {
-                if let Some(capture) = captures.get(1) {
-                    return Some(capture.as_str().to_owned());
-                }
+        if let Some(captures) = self.regex.captures(self.text) {
+            if let Some(capture) = captures.get(1) {
+                return Some(capture.as_str().to_owned());
             }
         }
         None
     }
 
     pub fn any_match(&self) -> bool {
-        self.texts.iter().any(|t| self.regex.is_match(t))
+        self.regex.is_match(self.text)
     }
 }
 
